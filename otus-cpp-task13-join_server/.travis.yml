@@ -1,0 +1,23 @@
+dist: xenial
+language: cpp
+compiler: gcc
+env:
+  - TARGET=bulk_server
+before_install:
+  - sudo wget -O boost.tar.gz https://dl.bintray.com/boostorg/release/1.71.0/source/boost_1_71_0.tar.gz
+  - sudo tar xzf boost.tar.gz
+  - cd boost_1_71_0
+  - sudo ./bootstrap.sh --prefix=/usr/local
+  - sudo ./b2
+  - sudo ./b2 install
+  - cd ../
+script:
+- cmake .
+- cmake --build .
+- cmake --build . --target package
+deploy:
+  - provider: script
+    skip_cleanup: true
+    script:
+      curl -T ${TARGET}-0.0.${TRAVIS_BUILD_NUMBER}-Linux.deb -usild:${BINTRAY_API_KEY} "https://api.bintray.com/content/sild/otus-cpp/homework/0.0.${TRAVIS_BUILD_NUMBER}/${TARGET}-0.0.${TRAVIS_BUILD_NUMBER}-Linux.deb;deb_distribution=xenial;deb_component=main;deb_architecture=amd64;publish=1"
+

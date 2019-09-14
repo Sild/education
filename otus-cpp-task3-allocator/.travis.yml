@@ -1,0 +1,18 @@
+dist: xenial
+language: cpp
+compiler: clang
+before_script:
+- sudo apt update
+- sudo apt install libboost-test-dev libspdlog-dev -y
+env:
+  - TARGET=allocator
+script:
+- cmake .
+- cmake --build .
+- cmake --build . --target test
+- cmake --build . --target package
+deploy:
+  provider: script
+  skip_cleanup: true
+  script:
+  - curl -T *.deb -usild:${BINTRAY_API_KEY} "https://api.bintray.com/content/sild/otus-cpp/homework/0.0.${TRAVIS_BUILD_NUMBER}/${TARGET}-0.0.${TRAVIS_BUILD_NUMBER}-Linux.deb;deb_distribution=xenial;deb_component=main;deb_architecture=amd64;publish=1"
