@@ -1,8 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
-func reader(buffer <-chan int) {
+func reader(buffer <-chan int, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for val := range buffer {
 		val = <-buffer
 		fmt.Printf("reader get: %d\n", val)
@@ -10,7 +14,8 @@ func reader(buffer <-chan int) {
 	fmt.Println("reader done")
 }
 
-func writer(buffer chan<- int, count int) {
+func writer(buffer chan<- int, count int, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for i :=0; i < count; i++ {
 		buffer <- i
 		fmt.Printf("writer put: %d\n", i)
@@ -20,10 +25,12 @@ func writer(buffer chan<- int, count int) {
 }
 
 func main() {
-	sChannel := make(chan int)
+	sChannel := make(chan int, 0)
+	wg := &sync.WaitGroup{}
 
-	go writer(sChannel, 12)
-	go reader(sChannel)
-	fmt.Scanln()
+	wg.Add(2)
+	go writer(sChannel, 12, wg)
+	go reader(sChannel, wg)
+	wg.Wait()
 
 }
