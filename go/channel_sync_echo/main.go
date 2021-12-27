@@ -8,7 +8,6 @@ import (
 func reader(buffer <-chan int, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for val := range buffer {
-		val = <-buffer
 		fmt.Printf("reader get: %d\n", val)
 	}
 	fmt.Println("reader done")
