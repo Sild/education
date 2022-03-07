@@ -9,7 +9,7 @@ using namespace std;
 class Solution {
 public:
     int lengthOfLongestSubstring(const string& s) {
-        std::cout << "str=" << s << std::endl;
+        // std::cout << "str=" << s << std::endl;
         std::array<int, 256> char_pos;
         char_pos.fill(-1);
 
@@ -24,21 +24,19 @@ public:
         {  
             char ch = s[i];
             // std::cout << "i=" << i << ", char=" << ch << std::endl;
-            if (const auto dup_pos = char_pos[ch]; dup_pos >= start_pos && i != dup_pos)
+            if (const auto dup_pos = char_pos[ch]; dup_pos >= start_pos)
             {
                 max = std::max(max, cur_len);
-                char_pos[ch] = -1;
-                i = dup_pos + 1;
-                start_pos = i;
-                cur_len = 0;
-                // std::cout << "max=" << max << ", dup_pos=" << dup_pos << ", new_i=" << i << std::endl;
+                start_pos = dup_pos + 1;
+                cur_len = i - start_pos + 1;
+                // std::cout << "max=" << max << ", dup_pos=" << dup_pos << ", new_i=" << i << ", cur_len=" << cur_len << ", start_pos=" << start_pos << std::endl;
             }
             else
             {
-                char_pos[ch] = i;
                 ++cur_len;
-                ++i;
             }
+            char_pos[ch] = i;
+            ++i;
             // std::cout << "cur_len=" << cur_len << std::endl;
             
         }
