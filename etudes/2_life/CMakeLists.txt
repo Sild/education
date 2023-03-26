@@ -8,10 +8,23 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_REQUIRED_FLAGS "-std=c++20")
 set(CMAKE_COMPILE_OPTIONS "-Wpedantic;-Wall;-Wextra")
 set(CMAKE_CXX_COMPILER "clang++")
+INCLUDE_DIRECTORIES(
+    src
+)
 
 add_executable(life
     src/main.cpp
 )
 
-set(CPACK_PACKAGE_CONTACT sildtm@icloud.com)
+find_package(benchmark REQUIRED)
 
+add_executable(iteration_perf_test
+    src/iteration_perf.cpp
+)
+
+target_link_libraries(iteration_perf_test benchmark::benchmark)
+
+# enable_testing()
+# add_test(tests
+#     iteration_perf_test
+# )
