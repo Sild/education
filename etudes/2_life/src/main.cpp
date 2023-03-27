@@ -2,12 +2,12 @@
 
 #include <unistd.h>
 
-#include "life2.h"
+#include "life.h"
 
 const int ARENA_SIZE = 20;
 const size_t ITERATIONS = 50;
 
-using namespace life2;
+using namespace life;
 
 int main() {
     std::unordered_set<Position> life_positions;
