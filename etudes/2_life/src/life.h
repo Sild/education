@@ -73,4 +73,36 @@ void iteration(matrix& arena) {
     arena = new_arena;
 }
 
+void iteration_inplace(matrix& arena) {
+    const int arena_size = int(arena.size());
+
+    std::vector<Position> to_change;
+
+    for (int i = 0; i < arena_size; ++i) {
+        for (int j = 0; j < arena_size; ++j) {
+            auto cur = arena[i][j];
+            size_t life_cnt = 0;
+            for (int p = -1; p <=1; ++p) {
+                if (i + p < 0 || i + p >= arena_size) {
+                    continue;
+                }
+                for (int k = -1; k <= 1; ++k) {
+                    if ((p == 0 && k == 0) || j + k < 0 || j + k >= arena_size) {
+                        continue;
+                    }
+                    life_cnt += int(arena[i + p][j + k]);
+                }
+            }
+            if (cur && (life_cnt < 2 || life_cnt > 3)) {
+                to_change.emplace_back(Position{i, j});
+            } else if (!cur && life_cnt == 3) {
+                to_change.emplace_back(Position{i, j});
+            }
+        }
+    }
+    for (const auto& pos: to_change) {
+        arena[pos.row][pos.column] = ~arena[pos.row][pos.column];
+    }
+}
+
 }

@@ -20,12 +20,12 @@ static void copy_fill(benchmark::State& state) {
 }
 BENCHMARK(copy_fill);
 
-static auto copy_fill2_arena = prepare_arena();
-static void copy_fill2(benchmark::State& state) {
+static auto inplace_arena = prepare_arena();
+static void inplace(benchmark::State& state) {
   for (auto _ : state) {
-      life::iteration(copy_fill2_arena);
+      life::iteration(inplace_arena);
   }
 }
-BENCHMARK(copy_fill2);
+BENCHMARK(inplace);
 
 BENCHMARK_MAIN();

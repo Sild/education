@@ -19,7 +19,7 @@ int main() {
     sleep(1);
 
     for (int i = 0; i < ITERATIONS; ++i) {
-        life::iteration(arena);
+        life::iteration_inplace(arena);
         life::print_arena(arena);
         sleep(1);
     }
