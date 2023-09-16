@@ -6,3 +6,4 @@ target
 .idea
 .DS_Store
 Cargo.lock
+rust/otus_rust_2023/*.zip
