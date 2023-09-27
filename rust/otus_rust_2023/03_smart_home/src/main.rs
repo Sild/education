@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
+use rand::Rng;
 use std::io::{Error, ErrorKind};
 use std::ops::Index;
-use rand::Rng;
 
 const MAX_ROOMS: i32 = 4;
 const MAX_SOCKET_PER_ROOM: i32 = 4;
@@ -24,18 +24,13 @@ impl SmartHouse {
 
         for v in rooms.iter() {
             let sock_cnt = rng.gen_range(1..=MAX_SOCKET_PER_ROOM);
-            let room_sockets = Vec::from_iter(
-                (0..sock_cnt).map(|i| (
-                    SmartSocket::new(format!("socket_{}", i))
-                ))
-            );
+            let room_sockets =
+                Vec::from_iter((0..sock_cnt).map(|i| (SmartSocket::new(format!("socket_{}", i)))));
             sockets.insert(v.clone(), room_sockets);
 
             let therm_cnt = rng.gen_range(1..=MAX_THERM_PER_ROOM);
             let therms = Vec::from_iter(
-                (0..therm_cnt).map(|i| (
-                    SmartThermometer::new(format!("termo_{}", i))
-                ))
+                (0..therm_cnt).map(|i| (SmartThermometer::new(format!("termo_{}", i)))),
             );
             thermometers.insert(v.clone(), therms);
         }
@@ -54,13 +49,25 @@ impl SmartHouse {
         if !self.rooms.contains(room) {
             return Err(Error::new(ErrorKind::InvalidInput, "Room not found"));
         };
-        let mut res = Vec::from_iter(self.sockets.index(room).iter().map(|x| format!("divice: {}, status: {:?}", x.id.as_str(), x.is_on)));
-        res.append(&mut Vec::from_iter(self.thermometers.index(room).iter().map(|x| format!("divice: {}, status: {:?}", x.id.as_str(), x.is_on))));
+        let mut res = Vec::from_iter(
+            self.sockets
+                .index(room)
+                .iter()
+                .map(|x| format!("divice: {}, status: {:?}", x.id.as_str(), x.is_on)),
+        );
+        res.append(&mut Vec::from_iter(
+            self.thermometers
+                .index(room)
+                .iter()
+                .map(|x| format!("divice: {}, status: {:?}", x.id.as_str(), x.is_on)),
+        ));
         Ok(res)
     }
 
     fn create_report<T>(&self, provider: &T) -> String
-        where T: DeviceInfoProvider {
+    where
+        T: DeviceInfoProvider,
+    {
         provider.print_info()
     }
 }
@@ -76,29 +83,21 @@ trait DeviceInfoProvider {
 
 struct SmartSocket {
     id: String,
-    is_on: Option<bool>
-
+    is_on: Option<bool>,
 }
 impl SmartSocket {
     fn new(id: String) -> Self {
-        Self {
-            id,
-            is_on: None,
-        }
+        Self { id, is_on: None }
     }
 }
 
 struct SmartThermometer {
     id: String,
-    is_on: Option<bool>
-
+    is_on: Option<bool>,
 }
 impl SmartThermometer {
     fn new(id: String) -> Self {
-        Self {
-            id,
-            is_on: None,
-        }
+        Self { id, is_on: None }
     }
 }
 
@@ -110,7 +109,10 @@ struct OwningDeviceInfoProvider {
 
 impl DeviceInfoProvider for OwningDeviceInfoProvider {
     fn print_info(&self) -> String {
-        format!("DeviceInfoProvider: socket_id: {}, socket_status: {:?}", self.socket.id, self.socket.is_on)
+        format!(
+            "DeviceInfoProvider: socket_id: {}, socket_status: {:?}",
+            self.socket.id, self.socket.is_on
+        )
     }
 }
 struct BorrowingDeviceInfoProvider<'a, 'b> {
@@ -133,11 +135,8 @@ fn main() {
     // Инициализация дома
     let house = SmartHouse::new();
 
-
     // Строим отчёт с использованием `OwningDeviceInfoProvider`.
-    let info_provider_1 = OwningDeviceInfoProvider {
-        socket: socket1,
-    };
+    let info_provider_1 = OwningDeviceInfoProvider { socket: socket1 };
     let report1 = house.create_report(&info_provider_1);
 
     // Строим отчёт с использованием `BorrowingDeviceInfoProvider`.
@@ -153,6 +152,10 @@ fn main() {
     println!("Report #2: {report2}");
 
     for room in house.get_rooms() {
-        println!("Devices in room {}: {}", room, house.devices(room).unwrap().join(", "));
+        println!(
+            "Devices in room {}: {}",
+            room,
+            house.devices(room).unwrap().join(", ")
+        );
     }
 }
