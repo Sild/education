@@ -5,7 +5,7 @@ pub struct Socket {
     pub is_on: bool,
 }
 impl Socket {
-    pub(crate) fn new(id: String) -> Self {
+    pub fn new(id: String) -> Self {
         Self { id, is_on: false }
     }
 }
@@ -17,7 +17,7 @@ pub struct Thermometer {
 }
 
 impl Thermometer {
-    pub(crate) fn new(id: String) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
             id,
             is_on: false,
@@ -49,6 +49,7 @@ impl SmartDevice for Thermometer {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use crate::smart_devices::{Socket, Thermometer};
     use crate::smart_home::SmartDevice;
