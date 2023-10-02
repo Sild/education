@@ -3,7 +3,6 @@ mod smart_home;
 use rand::Rng;
 use std::io::Error;
 
-
 const MAX_ROOMS: i32 = 4;
 
 fn main() -> Result<(), Error> {
