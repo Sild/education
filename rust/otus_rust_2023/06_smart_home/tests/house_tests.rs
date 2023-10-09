@@ -1,9 +1,9 @@
-#[cfg(test)]
-use std::any::Any;
 use smart_home;
 use smart_home::devices::socket::Socket;
 use smart_home::house::house::House;
 use smart_home::house::traits::{DeviceVisitor, SmartDevice};
+#[cfg(test)]
+use std::any::Any;
 
 #[test]
 fn test_rooms_count() {
@@ -28,22 +28,28 @@ fn test_same_devices_error() {
     _ = house.add_room("t1");
     _ = house.add_room("t2");
     _ = house.add_device("t1", Socket::new("d1".to_string()));
-    assert!(house.add_device("t1", Socket::new("d1".to_string())).is_err());
+    assert!(house
+        .add_device("t1", Socket::new("d1".to_string()))
+        .is_err());
     // fine for another room
-    assert!(house.add_device("t2", Socket::new("d1".to_string())).is_ok());
+    assert!(house
+        .add_device("t2", Socket::new("d1".to_string()))
+        .is_ok());
 }
 
 #[test]
 fn test_wrong_room_add_device() {
     let mut house = House::default();
     _ = house.add_room("t1");
-    assert!(house.add_device("t2", Socket::new("d1".to_string())).is_err());
+    assert!(house
+        .add_device("t2", Socket::new("d1".to_string()))
+        .is_err());
 }
 
 #[test]
 fn test_visitor() {
     struct TestDevice {
-        id: String
+        id: String,
     }
     impl SmartDevice for TestDevice {
         fn get_id(&self) -> &str {
@@ -52,24 +58,49 @@ fn test_visitor() {
     }
     #[derive(Default)]
     struct TestVisitor {
-        data: Vec<String>
+        data: Vec<String>,
     }
     impl DeviceVisitor for TestVisitor {
         fn visit(&mut self, room_id: &str, any_device: &dyn Any) {
-            self.data.push(format!("{}_{}", room_id, any_device.downcast_ref::<TestDevice>().expect("fail to downcast stored device").get_id()))
+            self.data.push(format!(
+                "{}_{}",
+                room_id,
+                any_device
+                    .downcast_ref::<TestDevice>()
+                    .expect("fail to downcast stored device")
+                    .get_id()
+            ))
         }
         fn visit_mut(&mut self, room_id: &str, any_device: &mut dyn Any) {
-            any_device.downcast_mut::<TestDevice>().expect("fail to downcast stored device").id = format!("{}_{}", room_id, "new_id")
+            any_device
+                .downcast_mut::<TestDevice>()
+                .expect("fail to downcast stored device")
+                .id = format!("{}_{}", room_id, "new_id")
         }
     }
 
     let mut house = House::default();
     _ = house.add_room("r1");
-    _ = house.add_device("r1", TestDevice{id: "d1".to_string()});
+    _ = house.add_device(
+        "r1",
+        TestDevice {
+            id: "d1".to_string(),
+        },
+    );
 
     _ = house.add_room("r2");
-    _ = house.add_device("r2", TestDevice{id: "d1".to_string()});
-    _ = house.add_device("r2", TestDevice{id: "d2".to_string()});
+    _ = house.add_device(
+        "r2",
+        TestDevice {
+            id: "d1".to_string(),
+        },
+    );
+    _ = house.add_device(
+        "r2",
+        TestDevice {
+            id: "d2".to_string(),
+        },
+    );
 
     // error
     let mut visitor = TestVisitor::default();
@@ -105,7 +136,7 @@ fn test_visitor() {
 #[test]
 fn test_extract_device() {
     struct TestDevice {
-        id: String
+        id: String,
     }
 
     impl SmartDevice for TestDevice {
@@ -114,11 +145,16 @@ fn test_extract_device() {
         }
     }
     struct BadDevice {
-        id: String
+        id: String,
     }
     let mut house = House::default();
     _ = house.add_room("r1");
-    _ = house.add_device("r1", TestDevice{id: "d1".to_string()});
+    _ = house.add_device(
+        "r1",
+        TestDevice {
+            id: "d1".to_string(),
+        },
+    );
 
     // bad room_id
     assert!(house.extract_device::<TestDevice>("r0", "d1").is_err());

@@ -23,8 +23,6 @@ impl Thermometer {
     }
 }
 
-
-
 impl Thermometer {
     #[allow(unused)]
     pub fn get_report(&self) -> String {

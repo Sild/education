@@ -1,9 +1,9 @@
-use std::io::Error;
 use smart_home;
-use smart_home::devices::visitors::{ReportVisitor, TurnOnVisitor};
-use smart_home::house::house::House;
 use smart_home::devices::socket::Socket;
 use smart_home::devices::thermo::Thermometer;
+use smart_home::devices::visitors::{ReportVisitor, TurnOnVisitor};
+use smart_home::house::house::House;
+use std::io::Error;
 
 fn print_device_report(house: &House, report_tag: &str) {
     println!("\n{}", report_tag);
@@ -21,12 +21,8 @@ fn main() -> Result<(), Error> {
     let living = "living_room";
 
     house.add_room(living)?;
-    house.add_device(living, Thermometer::new(
-        "living_termo_window".to_string(),
-    ))?;
-    house.add_device(living, Thermometer::new(
-        "living_termo_door".to_string(),
-    ))?;
+    house.add_device(living, Thermometer::new("living_termo_window".to_string()))?;
+    house.add_device(living, Thermometer::new("living_termo_door".to_string()))?;
 
     print_device_report(&house, "===default report===");
 
@@ -38,8 +34,6 @@ fn main() -> Result<(), Error> {
     _ = house.extract_device::<Socket>(bathroom, "bath_socket1");
 
     print_device_report(&house, "===extract report===");
-
-
 
     Ok(())
 }

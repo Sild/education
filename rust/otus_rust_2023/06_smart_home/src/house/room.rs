@@ -1,8 +1,7 @@
+use crate::house::traits::{DeviceVisitor, SmartDevice};
 use std::any::Any;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
-use crate::house::traits::{DeviceVisitor, SmartDevice};
-
 
 #[derive(Debug)]
 pub struct Room {
@@ -34,13 +33,13 @@ impl Room {
             Some(mut any_device) => {
                 match any_device.downcast::<T>() {
                     Ok(device) => Ok(*device),
-                    Err(any_device_back)=> {
+                    Err(any_device_back) => {
                         // not grate - push device back to storage ¯\_(ツ)_/¯
                         self.devices.insert(device_id.to_string(), any_device_back);
                         Err(Error::new(ErrorKind::InvalidInput, "wrong device type"))
-                    },
+                    }
                 }
-            },
+            }
             None => Err(Error::new(ErrorKind::NotFound, "Device not found")),
         }
     }
@@ -57,7 +56,4 @@ impl Room {
             visitor.visit(self.name.as_str(), &(**d))
         }
     }
-
 }
-
-

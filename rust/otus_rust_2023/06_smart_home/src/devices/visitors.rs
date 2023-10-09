@@ -1,8 +1,8 @@
-use std::any::Any;
-use std::collections::HashMap;
 use crate::devices::socket::Socket;
 use crate::devices::thermo::Thermometer;
 use crate::house::traits::DeviceVisitor;
+use std::any::Any;
+use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct ReportVisitor {
@@ -13,16 +13,20 @@ pub struct ReportVisitor {
 impl DeviceVisitor for ReportVisitor {
     fn visit(&mut self, room_id: &str, any_device: &dyn Any) {
         let default = Vec::new();
-        let report_entry = self.reports.entry(room_id.to_string()).or_insert_with(|| default);
+        let report_entry = self
+            .reports
+            .entry(room_id.to_string())
+            .or_insert_with(|| default);
         if let Some(device) = any_device.downcast_ref::<Socket>() {
             report_entry.push(device.get_report());
-            return
+            return;
         }
         if let Some(device) = any_device.downcast_ref::<Thermometer>() {
             report_entry.push(device.get_report());
-            return
+            return;
         }
-        self.errors.push(format!("Fail to get device_type in room {}", room_id))
+        self.errors
+            .push(format!("Fail to get device_type in room {}", room_id))
     }
 }
 
@@ -43,7 +47,6 @@ impl ReportVisitor {
                 println!("{err}")
             }
         }
-
     }
 }
 
@@ -56,12 +59,13 @@ impl DeviceVisitor for TurnOnVisitor {
     fn visit_mut(&mut self, room_id: &str, any_device: &mut dyn Any) {
         if let Some(device) = any_device.downcast_mut::<Socket>() {
             device.is_on = true;
-            return
+            return;
         }
         if let Some(device) = any_device.downcast_mut::<Thermometer>() {
             device.is_on = true;
-            return
+            return;
         }
-        self.errors.push(format!("Fail to get device_type in room {}", room_id))
+        self.errors
+            .push(format!("Fail to get device_type in room {}", room_id))
     }
 }
