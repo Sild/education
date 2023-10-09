@@ -1,32 +1,45 @@
-mod smart_devices;
-mod smart_home;
 use std::io::Error;
+use smart_home;
+use smart_home::devices::visitors::{ReportVisitor, TurnOnVisitor};
+use smart_home::house::house::House;
+use smart_home::devices::socket::Socket;
+use smart_home::devices::thermo::Thermometer;
 
+fn print_device_report(house: &House, report_tag: &str) {
+    println!("\n{}", report_tag);
+    let mut reporter = ReportVisitor::default();
+    _ = house.visit_devices(&mut reporter, None);
+    reporter.print_report();
+}
 fn main() -> Result<(), Error> {
-    let mut house = smart_home::House::default();
-
-    let mut bathroom = smart_home::Room::new("bathroom");
-    bathroom.add_device(smart_devices::Thermometer::new("bath_termo1".to_string()))?;
-    bathroom.add_device(smart_devices::Socket::new("bath_socket1".to_string()))?;
+    let mut house = House::default();
+    let bathroom = "bathroom";
     house.add_room(bathroom)?;
+    house.add_device(bathroom, Thermometer::new("bath_termo1".to_string()))?;
+    house.add_device(bathroom, Socket::new("bath_socket1".to_string()))?;
 
-    let mut living_room = smart_home::Room::new("living_room");
-    living_room.add_device(smart_devices::Thermometer::new(
+    let living = "living_room";
+
+    house.add_room(living)?;
+    house.add_device(living, Thermometer::new(
         "living_termo_window".to_string(),
     ))?;
-    living_room.add_device(smart_devices::Thermometer::new(
+    house.add_device(living, Thermometer::new(
         "living_termo_door".to_string(),
     ))?;
-    living_room.add_device(smart_devices::Socket::new("living_socket1".to_string()))?;
-    house.add_room(living_room)?;
 
-    for room in house.iter_rooms() {
-        let mut room_info = "room: ".to_string() + room.name.as_str() + "\ndevices:\n";
-        for dev in room.iter_devices() {
-            room_info += &format!(" - {}\n", dev.get_id());
-        }
-        println!("{}", room_info)
-    }
+    print_device_report(&house, "===default report===");
+
+    let mut turn_on = TurnOnVisitor::default();
+    _ = house.visit_devices_mut(&mut turn_on, Some(bathroom));
+
+    print_device_report(&house, "===turn_on report===");
+
+    _ = house.extract_device::<Socket>(bathroom, "bath_socket1");
+
+    print_device_report(&house, "===extract report===");
+
+
 
     Ok(())
 }

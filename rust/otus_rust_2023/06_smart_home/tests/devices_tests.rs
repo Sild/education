@@ -1,8 +1,8 @@
 #[cfg(test)]
 use smart_home;
-
-use smart_home::smart_devices::{Socket, Thermometer};
-use smart_home::smart_home::DeviceWithID;
+use smart_home::devices::socket::Socket;
+use smart_home::devices::thermo::Thermometer;
+use smart_home::house::traits::SmartDevice;
 
 #[test]
 fn test_device_with_id_trait() {
