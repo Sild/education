@@ -1,4 +1,3 @@
-use smart_home;
 use smart_home::devices::socket::Socket;
 use smart_home::devices::thermo::Thermometer;
 use smart_home::devices::visitors::{ReportVisitor, TurnOnVisitor};
@@ -11,6 +10,7 @@ fn print_device_report(house: &House, report_tag: &str) {
     _ = house.visit_devices(&mut reporter, None);
     reporter.print_report();
 }
+
 fn main() -> Result<(), Error> {
     let mut house = House::default();
     let bathroom = "bathroom";

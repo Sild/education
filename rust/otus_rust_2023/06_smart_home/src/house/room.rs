@@ -30,7 +30,7 @@ impl Room {
 
     pub(crate) fn extract_device<T: 'static>(&mut self, device_id: &str) -> Result<T, Error> {
         match self.devices.remove(device_id) {
-            Some(mut any_device) => {
+            Some(any_device) => {
                 match any_device.downcast::<T>() {
                     Ok(device) => Ok(*device),
                     Err(any_device_back) => {

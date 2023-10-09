@@ -6,8 +6,8 @@ pub trait SmartDevice {
 }
 
 pub trait DeviceVisitor {
-    fn visit(&mut self, room_id: &str, any_device: &dyn Any) {}
-    fn visit_mut(&mut self, room_id: &str, any_device: &mut dyn Any) {}
+    fn visit(&mut self, _room_id: &str, _any_device: &dyn Any) {}
+    fn visit_mut(&mut self, _room_id: &str, _any_device: &mut dyn Any) {}
 }
 
 impl Debug for dyn SmartDevice {

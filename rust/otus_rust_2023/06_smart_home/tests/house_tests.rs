@@ -144,9 +144,7 @@ fn test_extract_device() {
             self.id.as_str()
         }
     }
-    struct BadDevice {
-        id: String,
-    }
+    struct BadDevice {}
     let mut house = House::default();
     _ = house.add_room("r1");
     _ = house.add_device(

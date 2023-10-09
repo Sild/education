@@ -39,7 +39,7 @@ impl ReportVisitor {
             }
             println!();
         }
-        if self.errors.len() == 0 {
+        if self.errors.is_empty() {
             println!("errors: no errors")
         } else {
             println!("errors:");
