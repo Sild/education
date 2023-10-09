@@ -34,7 +34,11 @@ impl Room {
             Some(mut any_device) => {
                 match any_device.downcast::<T>() {
                     Ok(device) => Ok(*device),
-                    Err(_) => Err(Error::new(ErrorKind::InvalidInput, "wrong device type")),
+                    Err(any_device_back)=> {
+                        // not grate - push device back to storage ¯\_(ツ)_/¯
+                        self.devices.insert(device_id.to_string(), any_device_back);
+                        Err(Error::new(ErrorKind::InvalidInput, "wrong device type"))
+                    },
                 }
             },
             None => Err(Error::new(ErrorKind::NotFound, "Device not found")),

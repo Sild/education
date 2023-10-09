@@ -101,3 +101,35 @@ fn test_visitor() {
     assert!(visitor.data[0].contains("r2_new_id"));
     assert!(visitor.data[1].contains("r2_new_id"));
 }
+
+#[test]
+fn test_extract_device() {
+    struct TestDevice {
+        id: String
+    }
+
+    impl SmartDevice for TestDevice {
+        fn get_id(&self) -> &str {
+            self.id.as_str()
+        }
+    }
+    struct BadDevice {
+        id: String
+    }
+    let mut house = House::default();
+    _ = house.add_room("r1");
+    _ = house.add_device("r1", TestDevice{id: "d1".to_string()});
+
+    // bad room_id
+    assert!(house.extract_device::<TestDevice>("r0", "d1").is_err());
+    // bad device_id
+    assert!(house.extract_device::<TestDevice>("r1", "d2").is_err());
+    // bad device_type
+    assert!(house.extract_device::<BadDevice>("r1", "d1").is_err());
+
+    let extracted = house.extract_device::<TestDevice>("r1", "d1");
+    assert!(extracted.is_ok());
+    assert_eq!(extracted.unwrap().id, "d1");
+    // can't extract it twice
+    assert!(house.extract_device::<TestDevice>("r1", "d1").is_err());
+}
