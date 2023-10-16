@@ -3,13 +3,20 @@ use crate::house::traits::{DeviceVisitor, SmartDevice};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 
-#[derive(Default, Debug)]
-pub struct House {
+#[derive(Debug)]
+pub struct House<T> {
     pub name: String,
-    rooms: HashMap<String, Room>,
+    rooms: HashMap<String, Room<T>>,
 }
 
-impl House {
+impl<T> House<T> {
+    pub fn new(name: &str) -> Self {
+        House {
+            name: name.to_string(),
+            rooms: HashMap::new(),
+        }
+    }
+
     pub fn add_room(&mut self, room_id: &str) -> Result<(), Error> {
         if self.rooms.contains_key(room_id) {
             return Err(Error::new(
@@ -41,11 +48,11 @@ impl House {
         Vec::from_iter(self.rooms.keys())
     }
 
-    pub fn add_device<T: SmartDevice + 'static>(
+    pub fn add_device<D: SmartDevice + 'static>(
         &mut self,
         room_id: &str,
-        device: T,
-    ) -> Result<(), Error> {
+        device: D,
+    ) -> Result<(), Error> where T: From<D> {
         match self.rooms.get_mut(room_id) {
             Some(room) => room.add_device(device),
             None => Err(Error::new(
@@ -55,9 +62,9 @@ impl House {
         }
     }
 
-    pub fn visit_devices_mut<T: DeviceVisitor>(
+    pub fn visit_devices_mut<V: DeviceVisitor<T>>(
         &mut self,
-        visitor: &mut T,
+        visitor: &mut V,
         room_id: Option<&str>,
     ) -> Result<(), Error> {
         match room_id {
@@ -80,9 +87,9 @@ impl House {
         Ok(())
     }
 
-    pub fn visit_devices<T: DeviceVisitor>(
+    pub fn visit_devices<V: DeviceVisitor<T>>(
         &self,
-        visitor: &mut T,
+        visitor: &mut V,
         room_id: Option<&str>,
     ) -> Result<(), Error> {
         match room_id {
@@ -105,11 +112,11 @@ impl House {
         Ok(())
     }
 
-    pub fn extract_device<T: 'static>(
+    pub fn extract_device<D: 'static>(
         &mut self,
         room_id: &str,
         device_id: &str,
-    ) -> Result<T, Error> {
+    ) -> Result<D, Error> {
         match self.rooms.get_mut(room_id) {
             Some(room) => room.extract_device(device_id),
             None => Err(Error::new(ErrorKind::NotFound, "Room not found")),

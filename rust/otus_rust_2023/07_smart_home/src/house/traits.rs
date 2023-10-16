@@ -5,9 +5,9 @@ pub trait SmartDevice {
     fn get_id(&self) -> &str;
 }
 
-pub trait DeviceVisitor {
-    fn visit(&mut self, _room_id: &str, _any_device: &dyn Any) {}
-    fn visit_mut(&mut self, _room_id: &str, _any_device: &mut dyn Any) {}
+pub trait DeviceVisitor<T> {
+    fn visit(&mut self, _room_id: &str, _any_device: &T) {}
+    fn visit_mut(&mut self, _room_id: &str, _any_device: &mut T) {}
 }
 
 impl Debug for dyn SmartDevice {

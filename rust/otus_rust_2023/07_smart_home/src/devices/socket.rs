@@ -1,3 +1,4 @@
+use crate::devices::Type;
 use crate::house::traits::SmartDevice;
 
 pub struct Socket {
@@ -21,5 +22,17 @@ impl Socket {
     #[allow(unused)]
     pub fn get_report(&self) -> String {
         format!("type: socket, id: {}, is_on: {}", self.id, self.is_on)
+    }
+}
+
+impl From<Socket> for Type {
+    fn from(value: Socket) -> Self {
+        Type::Socket(value)
+    }
+}
+
+impl From<Type> for Socket {
+    fn from(value: Type) -> Self {
+        value.
     }
 }
