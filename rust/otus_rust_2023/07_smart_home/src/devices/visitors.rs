@@ -6,8 +6,8 @@ use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct ReportVisitor {
-    reports: HashMap<String, Vec<String>>,
-    errors: Vec<String>,
+    pub reports: HashMap<String, Vec<String>>,
+    pub errors: Vec<String>,
 }
 
 impl DeviceVisitor for ReportVisitor {
@@ -48,6 +48,7 @@ impl ReportVisitor {
             }
         }
     }
+
 }
 
 #[derive(Default)]
