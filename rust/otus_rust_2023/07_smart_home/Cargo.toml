@@ -12,3 +12,4 @@ log = "0.4.20"
 tera = "1"
 include_dir = "0.7.1"
 serde_json = { version = "1.0"}
+url = "2.4.1"

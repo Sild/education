@@ -1,39 +1,68 @@
+#![feature(let_chains)]
+
 use smart_home::devices::socket::Socket;
-use smart_home::devices::thermo::Thermometer;
-use smart_home::devices::visitors::{ReportVisitor, TurnOnVisitor};
+use smart_home::devices::thermo::Thermo;
+use smart_home::devices::visitors::{ReportVisitor};
 use smart_home::house::house::House;
 use std::io::Error;
 use std::{
-    io::{prelude::*, BufReader},
+    io::{prelude::*},
     net::{TcpListener, TcpStream},
 };
-use itertools::Itertools;
-// use serde::{Deserialize, Serialize};
 use tera::Tera;
+use url::Url;
 
-fn print_device_report(house: &House, report_tag: &str) {
-    println!("\n{}", report_tag);
-    let mut reporter = ReportVisitor::default();
-    _ = house.visit_devices(&mut reporter, None);
-    reporter.print_report();
+fn parse_url(stream: &mut TcpStream) -> Option<Url> {
+    let mut buffer = [0; 1024];
+    let n = stream.read(&mut buffer).expect("failed to read from stream");
+
+    let request = std::str::from_utf8(&buffer[..n]).ok()?;
+
+    let lines: Vec<&str> = request.lines().collect();
+    if lines.is_empty() {
+        return None;
+    }
+
+    let first_line = lines[0];
+    let parts: Vec<&str> = first_line.split_whitespace().collect();
+    if parts.len() < 2 {
+        return None;
+    }
+
+    let method = parts[0];
+    let url = parts[1];
+
+    match method {
+        "GET" | "POST" => Url::parse(url).ok(),
+        _ => None
+    }
 }
 
 fn handle_connection(mut stream: TcpStream, house: &mut House) {
-    let buf_reader = BufReader::new(&mut stream);
-    let http_request: Vec<_> = buf_reader
-        .lines()
-        .map(|result| result.unwrap())
-        .take_while(|line| !line.is_empty())
-        .collect();
+    if let Some(url) = parse_url(&mut stream) &&  url.path().starts_with("/switch_status") {
+        handle_switch(&url, &mut stream, house);
+        return;
+    }
+    handle_default(&mut stream, house)
+}
 
+fn handle_switch(url: &Url, stream: &mut TcpStream, _house: &mut House) {
+    let response = format!("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nblablabla");
+    let args = url.path().split("/").collect::<Vec<_>>();
+    let room = args.get(1).unwrap_or("".into());
+    let device = args.get(2).unwrap_or("".into());
+    
+    stream.write_all(response.as_bytes()).unwrap();
+}
+
+fn handle_default(stream: &mut TcpStream, house: &House) {
     let mut reporter = ReportVisitor::default();
     _ = house.visit_devices(&mut reporter, None);
 
-    let mut teraCtx = tera::Context::new();
+    let mut tera_ctx = tera::Context::new();
 
-    let mut rooms = reporter.reports.iter().map(|x| {x.0}).collect_vec();
-    rooms.sort();
-    teraCtx.insert("rooms", &rooms);
+    tera_ctx.insert("reports", &reporter.reports);
+    // println!("{:?}", http_request);
 
 
     let tpl_name = "index.html";
@@ -42,10 +71,11 @@ fn handle_connection(mut stream: TcpStream, house: &mut House) {
     tera.add_raw_template(tpl_name, tpl_data).unwrap();
 
 
-    let html = tera.render(tpl_name, &teraCtx).unwrap();
+    let html = match tera.render(tpl_name, &tera_ctx) {
+        Ok(t) => t,
+        Err(e) => format!("Render error: {:?}", e),
+    };
     let response = format!("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n{html}");
-
-
     stream.write_all(response.as_bytes()).unwrap();
 }
 
@@ -54,13 +84,13 @@ fn main() -> Result<(), Error> {
     let bathroom = "bathroom";
 
     house.add_room(bathroom)?;
-    house.add_device(bathroom, Thermometer::new("bath_termo1".to_string()))?;
+    house.add_device(bathroom, Thermo::new("bath_termo1".to_string()))?;
     house.add_device(bathroom, Socket::new("bath_socket1".to_string()))?;
 
     let living = "living_room";
     house.add_room(living)?;
-    house.add_device(living, Thermometer::new("living_termo_window".to_string()))?;
-    house.add_device(living, Thermometer::new("living_termo_door".to_string()))?;
+    house.add_device(living, Thermo::new("living_termo_window".to_string()))?;
+    house.add_device(living, Thermo::new("living_termo_door".to_string()))?;
 
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
 
@@ -68,17 +98,6 @@ fn main() -> Result<(), Error> {
         let stream = stream.unwrap();
         handle_connection(stream, &mut house);
     }
-
-    print_device_report(&house, "===default report===");
-
-    let mut turn_on = TurnOnVisitor::default();
-    _ = house.visit_devices_mut(&mut turn_on, Some(bathroom));
-
-    print_device_report(&house, "===turn_on report===");
-
-    _ = house.extract_device::<Socket>(bathroom, "bath_socket1");
-
-    print_device_report(&house, "===extract report===");
 
     Ok(())
 }

@@ -1,28 +1,27 @@
 use crate::devices::socket::Socket;
-use crate::devices::thermo::Thermometer;
-use crate::house::traits::DeviceVisitor;
+use crate::devices::thermo::Thermo;
+use crate::house::traits::{DeviceVisitor, SmartDevice};
 use std::any::Any;
 use std::collections::HashMap;
+use crate::devices::IdType;
 
 #[derive(Default)]
 pub struct ReportVisitor {
-    pub reports: HashMap<String, Vec<String>>,
-    pub errors: Vec<String>,
+    pub reports: HashMap<String, HashMap<IdType, String>>,
+    errors: Vec<String>,
 }
 
 impl DeviceVisitor for ReportVisitor {
     fn visit(&mut self, room_id: &str, any_device: &dyn Any) {
-        let default = Vec::new();
         let report_entry = self
             .reports
-            .entry(room_id.to_string())
-            .or_insert_with(|| default);
+            .entry(room_id.to_string()).or_insert(Default::default());
         if let Some(device) = any_device.downcast_ref::<Socket>() {
-            report_entry.push(device.get_report());
+            report_entry.insert(device.get_id().into(), device.get_report());
             return;
         }
-        if let Some(device) = any_device.downcast_ref::<Thermometer>() {
-            report_entry.push(device.get_report());
+        if let Some(device) = any_device.downcast_ref::<Thermo>() {
+            report_entry.insert(device.get_id().into(), device.get_report());
             return;
         }
         self.errors
@@ -34,7 +33,7 @@ impl ReportVisitor {
     pub fn print_report(&self) {
         for (room_id, reports) in self.reports.iter() {
             println!("report for room_id: {}", room_id);
-            for rep in reports {
+            for (_, rep) in reports.iter() {
                 println!("{}", rep)
             }
             println!();
@@ -62,7 +61,7 @@ impl DeviceVisitor for TurnOnVisitor {
             device.is_on = true;
             return;
         }
-        if let Some(device) = any_device.downcast_mut::<Thermometer>() {
+        if let Some(device) = any_device.downcast_mut::<Thermo>() {
             device.is_on = true;
             return;
         }

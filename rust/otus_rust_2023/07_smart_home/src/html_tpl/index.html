@@ -5,10 +5,11 @@
 </head>
 <body>
 <h1>Smart Home Dashboard</h1>
-{% for room_name in rooms %}
+{% for room_name, reps in reports %}
 <h3>room: {{ room_name }}</h3>
-    <h5>devices:</h5>
-    <p>some device</p>
-{% endfor %}}
+    {% for device_id, report in reps %}
+    <p>{{ report }} <a href="/switch_status/{{ room_name }}/{{ device_id }}/on">switch_status</a></p>
+    {% endfor %}
+{% endfor %}
 </body>
 </html>

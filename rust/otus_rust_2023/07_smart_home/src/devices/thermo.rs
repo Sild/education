@@ -1,19 +1,20 @@
+use crate::devices::IdType;
 use crate::house::traits::SmartDevice;
 
-pub struct Thermometer {
-    id: String,
+pub struct Thermo {
+    id: IdType,
     pub is_on: bool,
     #[allow(unused)]
     cur_temp: f32,
 }
 
-impl SmartDevice for Thermometer {
+impl SmartDevice for Thermo {
     fn get_id(&self) -> &str {
         &self.id
     }
 }
 
-impl Thermometer {
+impl Thermo {
     pub fn new(id: String) -> Self {
         Self {
             id,
@@ -23,7 +24,7 @@ impl Thermometer {
     }
 }
 
-impl Thermometer {
+impl Thermo {
     #[allow(unused)]
     pub fn get_report(&self) -> String {
         format!(
