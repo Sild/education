@@ -1,6 +1,6 @@
+use crate::devices::IdType;
 use crate::house::traits::SmartDevice;
 use rand::Rng;
-use crate::devices::IdType;
 
 pub struct Socket {
     id: IdType,
@@ -27,6 +27,9 @@ impl Socket {
             true => rng.gen::<f64>(),
             false => 0.0,
         };
-        format!("type: socket, id: {}, is_on: {}, power: {power:.2}", self.id, self.is_on)
+        format!(
+            "type: socket, id: {}, is_on: {}, power: {power:.2}",
+            self.id, self.is_on
+        )
     }
 }

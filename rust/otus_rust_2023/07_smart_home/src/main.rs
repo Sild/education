@@ -6,14 +6,16 @@ use smart_home::devices::visitors::{ReportVisitor, SwitchStatusVisitor};
 use smart_home::house::house::House;
 use std::io::Error;
 use std::{
-    io::{prelude::*},
+    io::prelude::*,
     net::{TcpListener, TcpStream},
 };
 use tera::Tera;
 
 fn parse_uri(stream: &mut TcpStream) -> Option<String> {
     let mut buffer = [0; 1024];
-    let n = stream.read(&mut buffer).expect("failed to read from stream");
+    let n = stream
+        .read(&mut buffer)
+        .expect("failed to read from stream");
 
     let request = std::str::from_utf8(&buffer[..n]).ok()?;
     let lines: Vec<&str> = request.lines().collect();
@@ -38,19 +40,21 @@ fn handle_connection(mut stream: TcpStream, house: &mut House) {
     handle_default(&mut stream, house)
 }
 
-fn handle_switch(uri: &String, stream: &mut TcpStream, house: &mut House) {
-    let args = uri.split("/").collect::<Vec<_>>();
+fn handle_switch(uri: &str, stream: &mut TcpStream, house: &mut House) {
+    let args = uri.split('/').collect::<Vec<_>>();
     let room = args.get(2);
     let device = args.get(3);
     if room.is_none() || device.is_none() {
         return;
     }
-    let mut visitor = SwitchStatusVisitor::new(vec!(*device.unwrap()));
+    let mut visitor = SwitchStatusVisitor::new(vec![*device.unwrap()]);
     match house.visit_devices_mut(&mut visitor, Some(room.unwrap())) {
-        Ok(_) => {},
-        Err(_) => {},
+        Ok(_) => {}
+        Err(e) => {
+            println!("error: {:?}", e)
+        }
     }
-    let response = format!("HTTP/1.1 302 OK\r\nLocation: /\r\n\r\n");
+    let response = "HTTP/1.1 302 OK\r\nLocation: /\r\n\r\n".to_string();
     stream.write_all(response.as_bytes()).unwrap();
 }
 
@@ -63,12 +67,10 @@ fn handle_default(stream: &mut TcpStream, house: &House) {
     tera_ctx.insert("reports", &reporter.reports);
     // println!("{:?}", http_request);
 
-
     let tpl_name = "index.html";
     let tpl_data = include_str!("html_tpl/index.html");
     let mut tera = Tera::default();
     tera.add_raw_template(tpl_name, tpl_data).unwrap();
-
 
     let html = match tera.render(tpl_name, &tera_ctx) {
         Ok(t) => t,
@@ -100,5 +102,3 @@ fn main() -> Result<(), Error> {
 
     Ok(())
 }
-
-
