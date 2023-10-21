@@ -8,7 +8,7 @@
 {% for room_name, reps in reports %}
 <h3>room: {{ room_name }}</h3>
     {% for device_id, report in reps %}
-    <p>{{ report }} <a href="/switch_status/{{ room_name }}/{{ device_id }}/on">switch_status</a></p>
+    <p>{{ report }} <a href="/switch_status/{{ room_name }}/{{ device_id }}">switch_status</a></p>
     {% endfor %}
 {% endfor %}
 </body>

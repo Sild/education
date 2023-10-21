@@ -2,13 +2,13 @@ use crate::devices::socket::Socket;
 use crate::devices::thermo::Thermo;
 use crate::house::traits::{DeviceVisitor, SmartDevice};
 use std::any::Any;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use crate::devices::IdType;
 
 #[derive(Default)]
 pub struct ReportVisitor {
     pub reports: HashMap<String, HashMap<IdType, String>>,
-    errors: Vec<String>,
+    pub errors: Vec<String>,
 }
 
 impl DeviceVisitor for ReportVisitor {
@@ -51,18 +51,36 @@ impl ReportVisitor {
 }
 
 #[derive(Default)]
-pub struct TurnOnVisitor {
-    errors: Vec<String>,
+pub struct SwitchStatusVisitor {
+    device_ids: HashSet<String>,
+    pub errors: Vec<String>,
 }
 
-impl DeviceVisitor for TurnOnVisitor {
+impl SwitchStatusVisitor {
+    pub fn new(device_ids_src: Vec<&str>) -> Self {
+        let mut device_ids = HashSet::new();
+        for d in device_ids_src.iter() {
+            device_ids.insert(d.to_string());
+        }
+        SwitchStatusVisitor {
+            device_ids,
+            errors: Default::default()
+        }
+    }
+}
+
+impl DeviceVisitor for SwitchStatusVisitor {
     fn visit_mut(&mut self, room_id: &str, any_device: &mut dyn Any) {
         if let Some(device) = any_device.downcast_mut::<Socket>() {
-            device.is_on = true;
+            if self.device_ids.contains(device.get_id()) {
+                device.is_on = ! device.is_on;
+            }
             return;
         }
         if let Some(device) = any_device.downcast_mut::<Thermo>() {
-            device.is_on = true;
+            if self.device_ids.contains(device.get_id()) {
+                device.is_on = ! device.is_on;
+            }
             return;
         }
         self.errors

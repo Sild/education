@@ -2,7 +2,7 @@
 
 use smart_home::devices::socket::Socket;
 use smart_home::devices::thermo::Thermo;
-use smart_home::devices::visitors::{ReportVisitor};
+use smart_home::devices::visitors::{ReportVisitor, SwitchStatusVisitor};
 use smart_home::house::house::House;
 use std::io::Error;
 use std::{
@@ -10,48 +10,47 @@ use std::{
     net::{TcpListener, TcpStream},
 };
 use tera::Tera;
-use url::Url;
 
-fn parse_url(stream: &mut TcpStream) -> Option<Url> {
+fn parse_uri(stream: &mut TcpStream) -> Option<String> {
     let mut buffer = [0; 1024];
     let n = stream.read(&mut buffer).expect("failed to read from stream");
 
     let request = std::str::from_utf8(&buffer[..n]).ok()?;
-
     let lines: Vec<&str> = request.lines().collect();
     if lines.is_empty() {
         return None;
     }
-
     let first_line = lines[0];
     let parts: Vec<&str> = first_line.split_whitespace().collect();
     if parts.len() < 2 {
         return None;
     }
 
-    let method = parts[0];
-    let url = parts[1];
-
-    match method {
-        "GET" | "POST" => Url::parse(url).ok(),
-        _ => None
-    }
+    Some(parts[1].to_string())
 }
 
 fn handle_connection(mut stream: TcpStream, house: &mut House) {
-    if let Some(url) = parse_url(&mut stream) &&  url.path().starts_with("/switch_status") {
-        handle_switch(&url, &mut stream, house);
+    let uri = parse_uri(&mut stream);
+    if let Some(uri) = uri && uri.starts_with("/switch_status") {
+        handle_switch(&uri, &mut stream, house);
         return;
     }
     handle_default(&mut stream, house)
 }
 
-fn handle_switch(url: &Url, stream: &mut TcpStream, _house: &mut House) {
-    let response = format!("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nblablabla");
-    let args = url.path().split("/").collect::<Vec<_>>();
-    let room = args.get(1).unwrap_or("".into());
-    let device = args.get(2).unwrap_or("".into());
-    
+fn handle_switch(uri: &String, stream: &mut TcpStream, house: &mut House) {
+    let args = uri.split("/").collect::<Vec<_>>();
+    let room = args.get(2);
+    let device = args.get(3);
+    if room.is_none() || device.is_none() {
+        return;
+    }
+    let mut visitor = SwitchStatusVisitor::new(vec!(*device.unwrap()));
+    match house.visit_devices_mut(&mut visitor, Some(room.unwrap())) {
+        Ok(_) => {},
+        Err(_) => {},
+    }
+    let response = format!("HTTP/1.1 302 OK\r\nLocation: /\r\n\r\n");
     stream.write_all(response.as_bytes()).unwrap();
 }
 

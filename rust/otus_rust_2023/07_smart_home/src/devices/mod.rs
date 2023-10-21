@@ -1,4 +1,4 @@
 pub mod socket;
 pub mod thermo;
 pub mod visitors;
-type IdType = String;
+pub type IdType = String;

@@ -27,6 +27,6 @@ impl Socket {
             true => rng.gen::<f64>(),
             false => 0.0,
         };
-        format!("type: socket, id: {}, is_on: {}, power: {power}", self.id, self.is_on)
+        format!("type: socket, id: {}, is_on: {}, power: {power:.2}", self.id, self.is_on)
     }
 }
