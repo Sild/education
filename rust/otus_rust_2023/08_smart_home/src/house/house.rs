@@ -11,6 +11,12 @@ pub struct House {
 
 impl House {
     pub fn add_room(&mut self, room_id: &str) -> Result<(), Error> {
+        if room_id.is_empty() {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Room name can't be empty",
+            ));
+        }
         if self.rooms.contains_key(room_id) {
             return Err(Error::new(
                 ErrorKind::AlreadyExists,
@@ -72,7 +78,7 @@ impl House {
             },
             None => {
                 for r in self.rooms.values_mut() {
-                    r.visit_devices(visitor);
+                    r.visit_devices_mut(visitor);
                 }
                 return Ok(());
             }
