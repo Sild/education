@@ -1,11 +1,8 @@
 #include <string>
-
 #include <cstddef>
-
 #include <concepts>
 
 template<typename T>
-
 concept Sorter = requires(T a) {
 
     { std::hash<T>{}(a) } -> std::convertible_to<std::size_t>;
@@ -15,15 +12,13 @@ concept Sorter = requires(T a) {
 struct asdf {};
 
 template<Sorter T>
-
 void f(T) {}
 
 int main() {
+  using namespace std::string_literals;
+  // using std::operators;
 
-  using std::operators;
+  f("abc"s);
 
-  f("abc"s); <i>// Верно, std::string удовлетворяет условиям Sorter</i>
-
-  <i>//f(asdf{}); // Ошибка: asdf не удовлетворяет условиям Sorter</i>
-
+  f(asdf{});
 }
