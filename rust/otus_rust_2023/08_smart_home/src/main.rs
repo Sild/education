@@ -85,7 +85,9 @@ fn main() -> Result<(), Error> {
     let bathroom = "bathroom";
 
     house.add_room(bathroom)?;
-    house.add_device(bathroom, Thermo::new("bath_termo1".to_string()))?;
+    let mut reportable_thermo = Thermo::new("bath_termo1".to_string());
+    reportable_thermo.enable_udp_updates(4444, 5555);
+    house.add_device(bathroom, reportable_thermo)?;
     house.add_device(bathroom, Socket::new("bath_socket1".to_string()))?;
 
     let living = "living_room";
