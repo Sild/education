@@ -52,9 +52,10 @@ impl Thermo {
             let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
 
             while !stop_flag.load(Ordering::Relaxed) {
-                let buf = format!("cur_temp: {}\n", cur_temp_send.lock().unwrap()).into_bytes();
-                socket.send_to(buf.as_slice(), &out_addr.as_str()).unwrap();
-                println!("report is sent");
+                let cur_val = *cur_temp_send.lock().unwrap();
+                let buf = format!("cur_temp: {}\n", cur_val).into_bytes();
+                socket.send_to(buf.as_slice(), out_addr.as_str()).unwrap();
+                println!("sent report with value: {}", cur_val);
                 thread::sleep(Duration::from_secs(1));
             }
             println!("sending thread stopped");
@@ -64,20 +65,18 @@ impl Thermo {
         let rcv_th = thread::spawn(move || {
             let in_addr = format!("127.0.0.1:{}", in_port);
             let socket = UdpSocket::bind(in_addr).unwrap();
+            let mut input_buf = [0; 10];
 
             while !stop_flag.load(Ordering::Relaxed) {
-                let mut input_buf = [0; 10];
                 let (r_size, _) = socket.recv_from(&mut input_buf).unwrap();
-                if r_size > 0 {
-                    let str = String::from_utf8(input_buf[..r_size].to_vec()).unwrap();
-                    match str.parse::<f32>() {
-                        Ok(new_val) => {
-                            *cur_temp_rcv.lock().unwrap() = new_val;
-                            println!("new value received: {}", new_val);
-                        }
-                        Err(e) => {
-                            println!("fail to parse input to f32: {:?}", e)
-                        }
+                let data = String::from_utf8(input_buf[..r_size].to_vec()).unwrap();
+                match data.trim().parse::<f32>() {
+                    Ok(new_val) => {
+                        *cur_temp_rcv.lock().unwrap() = new_val;
+                        println!("new value received: {}", new_val);
+                    }
+                    Err(e) => {
+                        println!("fail to parse input '{}' to f32: {:?}", data, e)
                     }
                 }
             }

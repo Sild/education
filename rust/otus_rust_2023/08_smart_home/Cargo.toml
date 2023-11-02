@@ -13,3 +13,7 @@ tera = "1"
 include_dir = "0.7.1"
 serde_json = { version = "1.0"}
 url = "2.4.1"
+
+[[bin]]
+name = "udp_cli"
+path = "src/udp_cli.rs"
