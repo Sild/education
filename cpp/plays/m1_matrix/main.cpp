@@ -1,25 +1,71 @@
 #include <benchmark/benchmark.h>
+#include <vector>
+#include <concepts>
 
-void reference_16x16xK(float *A, float *B, float *C, uint64_t K) {
-  for (uint32_t m = 0; m < 16; ++m) {
-    for (uint32_t n = 0; n < 16; ++n) {
-      C[n * 16 + m] = 0;
-      for (uint32_t k = 0; k < K; ++k) {
-        C[n * 16 + m] += A[k * 16 + m] * B[k * 16 + n];
-      }
+using namespace std;
+
+vector<int> build_vector(int size, bool reverse) {
+  vector<int> res;
+  res.resize(size);
+  if (reverse) {
+      for (int i = 0; i < size; ++i)
+        res[i] = i;
+  } else {
+      for (int i = size - 1; i >= 0; --i)
+        res[size - i - 1] = i;
+  }
+  return res;
+}
+
+vector<vector<int>> build_res(int size) {
+  vector<vector<int>> res;
+  res.resize(size);
+  for (auto& r: res) {
+    r.resize(size);
+  }
+  return res;
+}
+
+// template <typename T>
+// concept IsVec = std::is_same_v<T, std::vector<typename T::value_type>>;
+
+template<typename T>
+void reference(const T& a, const T& b, vector<T>& res) {
+  for (int i = 0; i < a.size(); ++i) {
+    for (int j = 0; j < b.size(); ++j) {
+      res[i][j] = a[i] * b[j];
     }
   }
 }
 
-static float a[2] = {1, 2};
-static float b[2] = {3, 4};
-static float c[4] = {};
-
 static void reference(benchmark::State& state) {
+  auto a = build_vector(200, true);
+  auto b = build_vector(200, false);
+  auto res = build_res(200);
   for (auto _ : state) {
-    reference_16x16xK(a, b, c, 2);
+    reference(a, b, res);
   }
 }
 BENCHMARK(reference);
+
+
+template<typename T>
+void v1(const T& a, const T& b, vector<T>& res) {
+  for (int i = 0; i < a.size(); ++i) {
+    for (int j = 0; j < b.size(); ++j) {
+      res[i][j] = a[i] * b[j];
+    }
+  }
+}
+
+static void v1(benchmark::State& state) {
+  auto a = build_vector(200, true);
+  auto b = build_vector(200, false);
+  auto res = build_res(200);
+  for (auto _ : state) {
+    v1(a, b, res);
+  }
+}
+BENCHMARK(v1);
 
 BENCHMARK_MAIN();
