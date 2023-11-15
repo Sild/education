@@ -11,9 +11,9 @@ void reference_16x16xK(float *A, float *B, float *C, uint64_t K) {
   }
 }
 
-static float[2] a = {1, 2};
-static float[2] b = {3, 4};
-static float[4] c = {};
+static float a[2] = {1, 2};
+static float b[2] = {3, 4};
+static float c[4] = {};
 
 static void reference(benchmark::State& state) {
   for (auto _ : state) {
