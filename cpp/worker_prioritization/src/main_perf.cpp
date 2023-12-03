@@ -43,6 +43,19 @@ static void workerPoolAssign1(benchmark::State &state) {
     pool.stop();
 }
 
+static void workerPoolAssign2(benchmark::State &state) {
+    auto tasks = prepareTasks();
+    auto pool = WorkerPool(4);
+
+    size_t iter = 0;
+    for (auto _ : state) {
+        size_t pos = iter++ % tasks.size();
+        pool.assign2(Task(tasks[pos]));
+    }
+    pool.stop();
+}
+
 BENCHMARK(worker);
 BENCHMARK(workerPoolAssign1);
+BENCHMARK(workerPoolAssign2);
 BENCHMARK_MAIN();
