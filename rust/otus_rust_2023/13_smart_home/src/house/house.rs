@@ -6,12 +6,17 @@ use std::io::{Error, ErrorKind};
 use super::errors::HouseError;
 
 #[derive(Default, Debug)]
-pub struct House {
-    pub name: String,
-    rooms: HashMap<String, Room>,
+pub struct House<T: SmartDevice> {
+    rooms: HashMap<String, Room<T>>,
 }
 
-impl House {
+impl<T: SmartDevice> House<T> {
+    pub fn new() -> Self {
+        Self {
+            rooms: HashMap::new(),
+        }
+    }
+
     pub fn add_room(&mut self, room_id: &str) -> Result<(), HouseError> {
         if room_id.is_empty() {
             return Err(HouseError::EmptyRoomName());
@@ -40,20 +45,16 @@ impl House {
         Vec::from_iter(self.rooms.keys())
     }
 
-    pub fn add_device<T: SmartDevice + 'static>(
-        &mut self,
-        room_id: &str,
-        device: T,
-    ) -> Result<(), HouseError> {
+    pub fn add_device(&mut self, room_id: &str, device: T) -> Result<(), HouseError> {
         match self.rooms.get_mut(room_id) {
             Some(room) => room.add_device(device),
             None => Err(HouseError::RoomAlreadyExists(room_id.to_string())),
         }
     }
 
-    pub fn visit_devices_mut<T: DeviceVisitor>(
+    pub fn visit_devices_mut(
         &mut self,
-        visitor: &mut T,
+        visitor: &mut dyn DeviceVisitor<T>,
         room_id: Option<&str>,
     ) -> Result<(), Error> {
         match room_id {
@@ -76,20 +77,15 @@ impl House {
         Ok(())
     }
 
-    pub fn visit_devices<T: DeviceVisitor>(
+    pub fn visit_devices(
         &self,
-        visitor: &mut T,
+        visitor: &mut dyn DeviceVisitor<T>,
         room_id: Option<&str>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), HouseError> {
         match room_id {
             Some(name) => match self.rooms.get(name) {
                 Some(room) => room.visit_devices(visitor),
-                None => {
-                    return Err(Error::new(
-                        ErrorKind::NotFound,
-                        "Room with such id doesn't exist",
-                    ))
-                }
+                None => return Err(HouseError::RoomNotFound(name.to_string())),
             },
             None => {
                 for r in self.rooms.values() {
@@ -101,11 +97,7 @@ impl House {
         Ok(())
     }
 
-    pub fn extract_device<T: 'static>(
-        &mut self,
-        room_id: &str,
-        device_id: &str,
-    ) -> Result<T, HouseError> {
+    pub fn extract_device(&mut self, room_id: &str, device_id: &str) -> Result<T, HouseError> {
         match self.rooms.get_mut(room_id) {
             Some(room) => room.extract_device(device_id),
             None => Err(HouseError::RoomNotFound(room_id.to_string())),

@@ -7,7 +7,6 @@ use std::time::Duration;
 use rand::Rng;
 
 use crate::devices::IdType;
-use crate::house::traits::SmartDevice;
 
 pub struct Thermo {
     id: IdType,
@@ -16,13 +15,11 @@ pub struct Thermo {
     report_stop: Arc<AtomicBool>,
 }
 
-impl SmartDevice for Thermo {
-    fn get_id(&self) -> &str {
+impl Thermo {
+    pub fn get_id(&self) -> &str {
         &self.id
     }
-}
 
-impl Thermo {
     pub fn new(id: String) -> Self {
         let mut rng = rand::thread_rng();
         Self {

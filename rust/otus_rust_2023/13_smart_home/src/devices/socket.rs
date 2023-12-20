@@ -1,5 +1,4 @@
 use crate::devices::IdType;
-use crate::house::traits::SmartDevice;
 use rand::Rng;
 
 pub struct Socket {
@@ -7,19 +6,15 @@ pub struct Socket {
     pub is_on: bool,
 }
 
-impl SmartDevice for Socket {
-    fn get_id(&self) -> &str {
+impl Socket {
+    pub fn get_id(&self) -> &str {
         &self.id
     }
-}
 
-impl Socket {
     pub fn new(id: String) -> Self {
         Self { id, is_on: false }
     }
-}
 
-impl Socket {
     #[allow(unused)]
     pub fn get_report(&self) -> String {
         let mut rng = rand::thread_rng();

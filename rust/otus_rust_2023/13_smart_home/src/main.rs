@@ -3,6 +3,7 @@
 use smart_home::devices::socket::Socket;
 use smart_home::devices::thermo::Thermo;
 use smart_home::devices::visitors::{ReportVisitor, SwitchStatusVisitor};
+use smart_home::devices::Device;
 use smart_home::house::house::House;
 use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, RwLock};
@@ -13,6 +14,8 @@ use std::{
     net::{TcpListener, TcpStream},
 };
 use tera::Tera;
+
+type HouseImpl = House<Device>;
 
 fn parse_uri(stream: &mut TcpStream) -> Option<String> {
     let mut buffer = [0; 1024];
@@ -34,7 +37,7 @@ fn parse_uri(stream: &mut TcpStream) -> Option<String> {
     Some(parts[1].to_string())
 }
 
-async fn handle_connection(mut stream: TcpStream, house: Arc<RwLock<House>>) {
+async fn handle_connection(mut stream: TcpStream, house: Arc<RwLock<HouseImpl>>) {
     println!("handling new connection");
     sleep(Duration::from_secs(2));
 
@@ -50,7 +53,7 @@ async fn handle_connection(mut stream: TcpStream, house: Arc<RwLock<House>>) {
     handle_default(&mut stream, lock.deref())
 }
 
-fn handle_switch(uri: &str, stream: &mut TcpStream, house: &mut House) {
+fn handle_switch(uri: &str, stream: &mut TcpStream, house: &mut HouseImpl) {
     let args = uri.split('/').collect::<Vec<_>>();
     let room = args.get(2);
     let device = args.get(3);
@@ -68,7 +71,7 @@ fn handle_switch(uri: &str, stream: &mut TcpStream, house: &mut House) {
     stream.write_all(response.as_bytes()).unwrap();
 }
 
-fn handle_default(stream: &mut TcpStream, house: &House) {
+fn handle_default(stream: &mut TcpStream, house: &HouseImpl) {
     let mut reporter = ReportVisitor::default();
     _ = house.visit_devices(&mut reporter, None);
 
@@ -95,7 +98,7 @@ fn handle_default(stream: &mut TcpStream, house: &House) {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut house = House::default();
+    let mut house = HouseImpl::new();
     let bathroom = "bathroom";
 
     house.add_room(bathroom)?;
@@ -104,13 +107,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let mut reportable_thermo = Thermo::new("bath_termo1".to_string());
     reportable_thermo.enable_udp_updates(4444, 5555);
-    house.add_device(bathroom, reportable_thermo)?;
-    house.add_device(bathroom, Socket::new("bath_socket1".to_string()))?;
+    house.add_device(bathroom, reportable_thermo.into())?;
+    house.add_device(bathroom, Socket::new("bath_socket1".to_string()).into())?;
 
     let living = "living_room";
     house.add_room(living)?;
-    house.add_device(living, Thermo::new("living_termo_window".to_string()))?;
-    house.add_device(living, Thermo::new("living_termo_door".to_string()))?;
+    house.add_device(
+        living,
+        Thermo::new("living_termo_window".to_string()).into(),
+    )?;
+    house.add_device(living, Thermo::new("living_termo_door".to_string()).into())?;
 
     let house = Arc::new(RwLock::new(house));
     let listener = TcpListener::bind("127.0.0.1:8080")?;

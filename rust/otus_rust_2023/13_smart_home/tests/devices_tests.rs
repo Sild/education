@@ -2,7 +2,6 @@
 use smart_home;
 use smart_home::devices::socket::Socket;
 use smart_home::devices::thermo::Thermo;
-use smart_home::house::traits::SmartDevice;
 
 #[test]
 fn test_device_with_id_trait() {
