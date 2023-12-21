@@ -6,9 +6,9 @@
 <body>
 <h1>Smart Home Dashboard</h1>
 {% for room_name, reps in reports %}
-<h3>room: {{ room_name }} <a href="/remove_room/{{ room_name }}">remove</a></h3>
+<h3>room: {{ room_name }} <a href="/remove_room?room_name={{ room_name }}">remove</a></h3>
     {% for device_id, report in reps %}
-    <p>{{ report }} <a href="/switch_status/{{ room_name }}/{{ device_id }}">switch_status</a> <a href="/remove_device/{{ room_name }}/{{ device_id }}">remove</a></p>
+    <p>{{ report }} <a href="/switch_status?room_name={{ room_name }}&device_id={{ device_id }}">switch_status</a> <a href="/remove_device?room_name={{ room_name }}&device_id={{ device_id }}">remove</a></p>
     {% endfor %}
     
     <form action="/add_device" method="post">
@@ -25,7 +25,7 @@
     </form>
 {% endfor %}
 
-<form action="/add_device" method="post">
+<form action="/add_room" method="post">
     <h3>new room:</h3> <input type="text" name="room_name" placeholder="room_name"></input>
     <input type="submit" value="add new room"></input>
 </form>

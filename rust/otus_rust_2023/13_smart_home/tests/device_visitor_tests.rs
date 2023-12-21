@@ -4,7 +4,6 @@ use smart_home::devices::visitors::{ReportVisitor, SwitchStatusVisitor};
 use smart_home::devices::Device;
 use smart_home::house::traits::DeviceVisitor;
 
-
 #[test]
 fn test_switch_status() {
     let mut report_visitor = ReportVisitor::default();

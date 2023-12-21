@@ -1,103 +1,20 @@
 #![feature(let_chains)]
 
-use smart_home::devices::socket::Socket;
-use smart_home::devices::thermo::Thermo;
 use smart_home::devices::visitors::{ReportVisitor, SwitchStatusVisitor};
 use smart_home::devices::Device;
 use smart_home::house::house::House;
-use std::ops::{Deref, DerefMut};
+use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use std::thread::sleep;
-use std::time::Duration;
-use std::{
-    io::prelude::*,
-    net::{TcpListener, TcpStream},
-};
 use tera::Tera;
+use tide::http::mime;
+
+use smart_home::devices::socket::Socket;
+use smart_home::devices::thermo::Thermo;
+use tide::{Redirect, Request, Response, Result};
 
 type HouseImpl = House<Device>;
 
-fn parse_uri(stream: &mut TcpStream) -> Option<String> {
-    let mut buffer = [0; 1024];
-    let n = stream
-        .read(&mut buffer)
-        .expect("failed to read from stream");
-
-    let request = std::str::from_utf8(&buffer[..n]).ok()?;
-    let lines: Vec<&str> = request.lines().collect();
-    if lines.is_empty() {
-        return None;
-    }
-    let first_line = lines[0];
-    let parts: Vec<&str> = first_line.split_whitespace().collect();
-    if parts.len() < 2 {
-        return None;
-    }
-
-    Some(parts[1].to_string())
-}
-
-async fn handle_connection(mut stream: TcpStream, house: Arc<RwLock<HouseImpl>>) {
-    println!("handling new connection");
-    sleep(Duration::from_secs(2));
-
-    let uri = parse_uri(&mut stream);
-    if let Some(uri) = uri
-        && uri.starts_with("/switch_status")
-    {
-        let mut lock = house.write().unwrap();
-        handle_switch(&uri, &mut stream, lock.deref_mut());
-        return;
-    }
-    let lock = house.read().unwrap();
-    handle_default(&mut stream, lock.deref())
-}
-
-fn handle_switch(uri: &str, stream: &mut TcpStream, house: &mut HouseImpl) {
-    let args = uri.split('/').collect::<Vec<_>>();
-    let room = args.get(2);
-    let device = args.get(3);
-    if room.is_none() || device.is_none() {
-        return;
-    }
-    let mut visitor = SwitchStatusVisitor::new(vec![*device.unwrap()]);
-    match house.visit_devices_mut(&mut visitor, Some(room.unwrap())) {
-        Ok(_) => {}
-        Err(e) => {
-            println!("error: {:?}", e)
-        }
-    }
-    let response = "HTTP/1.1 302 OK\r\nLocation: /\r\n\r\n".to_string();
-    stream.write_all(response.as_bytes()).unwrap();
-}
-
-fn handle_default(stream: &mut TcpStream, house: &HouseImpl) {
-    let mut reporter = ReportVisitor::default();
-    _ = house.visit_devices(&mut reporter, None);
-
-    let mut tera_ctx = tera::Context::new();
-
-    tera_ctx.insert("reports", &reporter.reports);
-
-    let device_types = vec!["socket", "thermometer"];
-    tera_ctx.insert("device_types", &device_types);
-    // println!("{:?}", http_request);
-
-    let tpl_name = "index.html";
-    let tpl_data = include_str!("response_tmpl/index.html");
-    let mut tera = Tera::default();
-    tera.add_raw_template(tpl_name, tpl_data).unwrap();
-
-    let html = match tera.render(tpl_name, &tera_ctx) {
-        Ok(t) => t,
-        Err(e) => format!("Render error: {:?}", e),
-    };
-    let response = format!("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n{html}");
-    stream.write_all(response.as_bytes()).unwrap();
-}
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn build_house() -> Result<HouseImpl> {
     let mut house = HouseImpl::new();
     let bathroom = "bathroom";
 
@@ -117,19 +34,87 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Thermo::new("living_termo_window".to_string()).into(),
     )?;
     house.add_device(living, Thermo::new("living_termo_door".to_string()).into())?;
+    Ok(house)
+}
 
-    let house = Arc::new(RwLock::new(house));
-    let listener = TcpListener::bind("127.0.0.1:8080")?;
-    println!("listening on http://127.0.0.1:8080");
+fn handle_error(err: &str) -> tide::Result {
+    let tpl_name = "error.html";
+    let tpl_data = include_str!("response_tmpl/error.html");
+    let mut tera = Tera::default();
+    tera.add_raw_template(tpl_name, tpl_data).unwrap();
+    let mut tera_ctx = tera::Context::new();
+    tera_ctx.insert("error_text", &err.to_string());
 
-    for stream in listener.incoming() {
-        println!("new connection");
-        let house_th = house.clone();
-        let stream = stream.unwrap();
+    let html = match tera.render(tpl_name, &tera_ctx) {
+        Ok(t) => t,
+        Err(e) => format!("Render error: {:?}", e),
+    };
+    let response = Response::builder(400)
+        .body(html.as_str())
+        .content_type(mime::HTML)
+        .build();
+    Ok(response)
+}
 
-        tokio::spawn(async move {
-            handle_connection(stream, house_th).await;
-        });
+async fn handle_switch_status(req: Request<Arc<RwLock<HouseImpl>>>) -> tide::Result {
+    let params: HashMap<String, String> = req.query()?;
+    let room = match params.get("room_name") {
+        Some(r) => r,
+        None => return handle_error("argument room_name is required"),
+    };
+    let device = match params.get("device_id") {
+        Some(r) => r,
+        None => return handle_error("argument device_id is required"),
+    };
+    let mut house = req.state().write().unwrap();
+
+    let mut visitor = SwitchStatusVisitor::new(vec![device]);
+    match house.visit_devices_mut(&mut visitor, Some(room)) {
+        Ok(_) => {}
+        Err(e) => {
+            return handle_error(format!("error: {}", e).as_str());
+        }
     }
+    Ok(Redirect::new("/").into())
+}
+
+async fn handle_root(req: Request<Arc<RwLock<HouseImpl>>>) -> tide::Result {
+    let house = req.state().read().unwrap();
+
+    let mut reporter = ReportVisitor::default();
+    _ = house.visit_devices(&mut reporter, None);
+
+    let mut tera_ctx = tera::Context::new();
+
+    tera_ctx.insert("reports", &reporter.reports);
+
+    let device_types = vec!["socket", "thermometer"];
+    tera_ctx.insert("device_types", &device_types);
+
+    let tpl_name = "index.html";
+    let tpl_data = include_str!("response_tmpl/index.html");
+    let mut tera = Tera::default();
+    tera.add_raw_template(tpl_name, tpl_data).unwrap();
+
+    let html = match tera.render(tpl_name, &tera_ctx) {
+        Ok(t) => t,
+        Err(e) => format!("Render error: {:?}", e),
+    };
+    let response = Response::builder(200)
+        .body(html.as_str())
+        .content_type(mime::HTML)
+        .build();
+    Ok(response)
+}
+
+#[async_std::main]
+async fn main() -> tide::Result<()> {
+    let house = Arc::new(RwLock::new(build_house()?));
+    let mut server = tide::with_state(house);
+    server.at("/").get(handle_root);
+    server.at("/switch_status").get(handle_switch_status);
+
+    println!("listening on http://127.0.0.1:8080");
+    server.listen("127.0.0.1:8080").await?;
     Ok(())
 }

@@ -3,8 +3,6 @@ use smart_home::devices::socket::Socket;
 use smart_home::devices::Device;
 use smart_home::house::house::House;
 
-
-
 #[test]
 fn test_rooms_count() {
     let mut house = House::<Device>::new();

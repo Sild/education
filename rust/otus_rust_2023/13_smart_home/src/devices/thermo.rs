@@ -42,7 +42,7 @@ impl Thermo {
         let cur_temp_send = Arc::new(Mutex::new(self.cur_temp));
         let cur_temp_rcv = cur_temp_send.clone();
 
-        tokio::spawn(async move {
+        thread::spawn(move || {
             let out_addr = format!("127.0.0.1:{}", out_port);
             let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
 
@@ -51,13 +51,13 @@ impl Thermo {
                 let buf = format!("cur_temp: {}\n", cur_val).into_bytes();
                 socket.send_to(buf.as_slice(), out_addr.as_str()).unwrap();
                 println!("sent report with value: {}", cur_val);
-                thread::sleep(Duration::from_secs(1));
+                thread::sleep(Duration::from_secs(5));
             }
             println!("sending thread stopped");
         });
 
         let stop_flag = self.report_stop.clone();
-        tokio::spawn(async move {
+        thread::spawn(move || {
             let in_addr = format!("127.0.0.1:{}", in_port);
             let socket = UdpSocket::bind(in_addr).unwrap();
             let mut input_buf = [0; 10];
