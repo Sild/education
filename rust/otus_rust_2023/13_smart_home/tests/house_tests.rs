@@ -6,11 +6,11 @@ use smart_home::house::house::House;
 #[test]
 fn test_rooms_count() {
     let mut house = House::<Device>::new();
-    assert_eq!(house.get_room_ids().len(), 0);
+    assert_eq!(house.get_room_name().len(), 0);
     _ = house.add_room("t1");
-    assert_eq!(house.get_room_ids().len(), 1);
+    assert_eq!(house.get_room_name().len(), 1);
     _ = house.add_room("t2");
-    assert_eq!(house.get_room_ids().len(), 2);
+    assert_eq!(house.get_room_name().len(), 2);
 }
 
 #[test]
