@@ -9,12 +9,12 @@ use std::sync::{Arc, RwLock};
 use tera::Tera;
 use tide::http::mime;
 
-use project_root;
 use smart_home::devices::socket::Socket;
 use smart_home::devices::thermo::Thermo;
 use tide::{Redirect, Request, Response, Result, StatusCode};
 type HouseImpl = House<Device>;
 
+#[allow(clippy::upper_case_acronyms)]
 enum ResponseFormat {
     HTML,
     TXT,
@@ -68,7 +68,6 @@ fn render(
                 .unwrap()
                 .as_path()
                 .display()
-                .to_string()
         )
         .as_str(),
     ) {
@@ -81,7 +80,7 @@ fn render(
     let mut tera = Tera::default();
     tera.add_raw_template(tpl_name, tpl_data.as_str()).unwrap();
 
-    let html = match tera.render(tpl_name, &tera_ctx) {
+    let html = match tera.render(tpl_name, tera_ctx) {
         Ok(t) => t,
         Err(e) => format!("Render error: {:?}", e),
     };
@@ -169,30 +168,6 @@ async fn handle_add_room(mut req: Request<Arc<RwLock<HouseImpl>>>) -> tide::Resu
             }
         }
     }
-
-    let room = match params.get("room_name") {
-        Some(r) => r,
-        None => return handle_error(&req, "argument room_name is required"),
-    };
-    let device_id = match params.get("device_id") {
-        Some(r) => r,
-        None => return handle_error(&req, "argument device_id is required"),
-    };
-    let device = match params.get("device_type") {
-        Some(r) => match r.as_str() {
-            "socket" => Device::Socket(Socket::new(device_id.to_string()).into()),
-            "thermometer" => Device::Thermo(Thermo::new(device_id.to_string()).into()),
-            _ => return handle_error(&req, "argument device_type is invalid"),
-        },
-        None => return handle_error(&req, "argument device_type is required"),
-    };
-    let mut house = req.state().write().unwrap();
-    match house.add_device(room, device) {
-        Ok(_) => {}
-        Err(e) => {
-            return handle_error(&req, format!("error: {}", e).as_str());
-        }
-    }
     handle_redirect(&req)
 }
 
@@ -208,8 +183,8 @@ async fn handle_add_device(mut req: Request<Arc<RwLock<HouseImpl>>>) -> tide::Re
     };
     let device = match params.get("device_type") {
         Some(r) => match r.as_str() {
-            "socket" => Device::Socket(Socket::new(device_id.to_string()).into()),
-            "thermometer" => Device::Thermo(Thermo::new(device_id.to_string()).into()),
+            "socket" => Device::Socket(Socket::new(device_id.to_string())),
+            "thermometer" => Device::Thermo(Thermo::new(device_id.to_string())),
             _ => return handle_error(&req, "argument device_type is invalid"),
         },
         None => return handle_error(&req, "argument device_type is required"),

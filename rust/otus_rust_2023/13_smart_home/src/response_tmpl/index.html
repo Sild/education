@@ -30,15 +30,7 @@
 
     <form action="/add_room" method="post">
         <h3>new room:</h3> <input type="text" name="room_name" placeholder="room_name">
-        <input type="text" name="device_id" placeholder="device_id"></input>
-        <select name="device_type">
-            <optgroup label="device_type">
-                {% for device_type in device_types %}
-                <option value="{{ device_type }}">{{ device_type }}</option>
-                {% endfor %}
-            </optgroup>
-        </select>
-        <input type="submit" value="add new room with device"></input>
+        <input type="submit" value="add new room"></input>
     </form>
 </body>
 

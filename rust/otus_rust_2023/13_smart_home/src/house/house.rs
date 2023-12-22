@@ -24,18 +24,19 @@ impl<T: SmartDevice> House<T> {
         if self.rooms.contains_key(room_name) {
             return Err(HouseError::RoomAlreadyExists(room_name.to_string()));
         }
-        self.rooms.insert(room_name.to_string(), Room::new(room_name));
+        self.rooms
+            .insert(room_name.to_string(), Room::new(room_name));
         Ok(())
     }
 
     pub fn del_room(&mut self, room_name: &str) -> Result<(), HouseError> {
         match self.rooms.get(room_name) {
             Some(room) => match room.devices.len() {
-                0 => Err(HouseError::NonEmptyRoomRemoving(room_name.to_string())),
-                _ => {
+                0 => {
                     self.rooms.remove(room_name);
                     Ok(())
                 }
+                _ => Err(HouseError::NonEmptyRoomRemoving(room_name.to_string())),
             },
             None => Err(HouseError::RoomNotFound(room_name.to_string())),
         }

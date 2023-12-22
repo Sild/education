@@ -18,7 +18,14 @@ tide = "0.16.0"
 async-std = { version = "1.8.0", features = ["attributes"] }
 tokio = {version="1.34.0", features = ["rt", "macros", "rt-multi-thread"]}
 project-root = "0.2.2"
+strum = "0.25.0"
+strum_macros = "0.25"
+ureq = "2.9.1"
 
 [[bin]]
-name = "udp_cli"
-path = "src/udp_cli.rs"
+name = "thermo_udp_cli"
+path = "src/thermo_udp_cli.rs"
+
+[[bin]]
+name = "house_http_cli"
+path = "src/house_http_cli.rs"
