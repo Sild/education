@@ -1,0 +1,36 @@
+[package]
+name = "smart_home"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rand = "0.8.5"
+itertools = "0.12.0"
+log = "0.4.20"
+tera = "1"
+include_dir = "0.7.1"
+serde_json = { version = "1.0"}
+url = "2.4.1"
+thiserror = "1.0.51"
+tide = "0.16.0"
+async-std = { version = "1.8.0", features = ["attributes"] }
+tokio = {version="1.34.0", features = ["rt", "macros", "rt-multi-thread"]}
+project-root = "0.2.2"
+strum = "0.25.0"
+strum_macros = "0.25"
+ureq = "2.9.1"
+iced = "0.10"
+
+[[bin]]
+name = "thermo_udp_cli"
+path = "src/thermo_udp_cli.rs"
+
+[[bin]]
+name = "house_http_cli"
+path = "src/house_http_cli.rs"
+
+[[bin]]
+name = "house_gui_cli"
+path = "src/house_gui_cli.rs"

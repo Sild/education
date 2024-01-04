@@ -1,0 +1,6 @@
+{% for room_name, reps in reports %}
+room: {{ room_name }}
+    {% for device_id, report in reps %}
+    {{ report }}
+    {% endfor %}
+{% endfor %}
