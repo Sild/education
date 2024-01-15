@@ -76,28 +76,28 @@ class SymOrderBook {
     std::unordered_map<OrderID, Order> orders_store;
 
    public:
-    std::vector<Deal> upsert_order(Order&& newOrder) {
-        if (auto it = orders_store.find(newOrder.id); it != orders_store.end()) {
-            remove_order(newOrder.id);
+    std::vector<Deal> upsert_order(Order&& new_order) {
+        if (auto it = orders_store.find(new_order.id); it != orders_store.end()) {
+            remove_order(new_order.id);
         }
         // check if no match - then fill the book
-        if (newOrder.ask && (bids.empty() || bids.begin()->first < newOrder.price)) {
-            insert_order(std::move(newOrder));
+        if (new_order.ask && (bids.empty() || bids.begin()->first < new_order.price)) {
+            insert_order(std::move(new_order));
             return {};
         }
-        if (!newOrder.ask && (asks.empty() || asks.begin()->first > newOrder.price)) {
-            insert_order(std::move(newOrder));
+        if (!new_order.ask && (asks.empty() || asks.begin()->first > new_order.price)) {
+            insert_order(std::move(new_order));
             return {};
         }
 
         std::vector<Deal> deals;
         // match is guaranteed already
-        if (newOrder.ask) {
+        if (new_order.ask) {
             // remove copypaste somehow?
-            for (auto it = bids.begin(); it != bids.end() && it->first > newOrder.price;) {
+            for (auto it = bids.begin(); it != bids.end() && it->first > new_order.price;) {
                 auto& [bookPrice, bookOrders] = *it;
                 for (auto order_it = bookOrders.begin(); order_it != bookOrders.end();) {
-                    auto deal = make_deal(*(order_it->second), newOrder, it->first);
+                    auto deal = make_deal(*(order_it->second), new_order, it->first);
                     deals.emplace_back(std::move(deal));
                     if (eq_zero(order_it->second->quantity)) {
                         orders_store.erase(order_it->second->id);
@@ -106,17 +106,17 @@ class SymOrderBook {
                             it = asks.erase(it);
                         }
                     }
-                    if (eq_zero(newOrder.quantity)) {
+                    if (eq_zero(new_order.quantity)) {
                         return deals;
                     }
                 }
             }
         } else {
             // remove copypaste somehow?
-            for (auto it = asks.begin(); it != asks.end() && it->first < newOrder.price;) {
+            for (auto it = asks.begin(); it != asks.end() && it->first < new_order.price;) {
                 auto& [bookPrice, bookOrders] = *it;
                 for (auto order_it = bookOrders.begin(); order_it != bookOrders.end();) {
-                    auto deal = make_deal(newOrder, *(order_it->second), it->first);
+                    auto deal = make_deal(new_order, *(order_it->second), it->first);
                     deals.emplace_back(std::move(deal));
                     if (eq_zero(order_it->second->quantity)) {
                         orders_store.erase(order_it->second->id);
@@ -125,13 +125,13 @@ class SymOrderBook {
                             it = asks.erase(it);
                         }
                     }
-                    if (eq_zero(newOrder.quantity)) {
+                    if (eq_zero(new_order.quantity)) {
                         return deals;
                     }
                 }
             }
         }
-        insert_order(std::move(newOrder));
+        insert_order(std::move(new_order));
 
         return deals;
     }
