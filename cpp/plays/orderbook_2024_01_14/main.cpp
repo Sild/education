@@ -76,66 +76,62 @@ class SymOrderBook {
     std::unordered_map<OrderID, Order> orders_store;
 
    public:
-    std::vector<Deal> upsert_order(Order&& order) {
-        if (auto it = orders_store.find(order.id); it != orders_store.end()) {
-            remove_order(order.id);
+    std::vector<Deal> upsert_order(Order&& newOrder) {
+        if (auto it = orders_store.find(newOrder.id); it != orders_store.end()) {
+            remove_order(newOrder.id);
         }
         // check if no match - then fill the book
-        if (order.ask && (bids.empty() || bids.begin()->first < order.price)) {
-            insert_order(std::move(order));
+        if (newOrder.ask && (bids.empty() || bids.begin()->first < newOrder.price)) {
+            insert_order(std::move(newOrder));
             return {};
         }
-        if (!order.ask && (asks.empty() || asks.begin()->first > order.price)) {
-            insert_order(std::move(order));
+        if (!newOrder.ask && (asks.empty() || asks.begin()->first > newOrder.price)) {
+            insert_order(std::move(newOrder));
             return {};
         }
 
         std::vector<Deal> deals;
         // match is guaranteed already
-        if (order.ask) {
-            while (true) {
-                auto it = bids.begin();
-                if (it == bids.end() || it->first < order.price) {
-                    break;
-                }
-                for (auto order_it = it->second.begin(); order_it != it->second.end();) {
-                    auto deal = make_deal(*(order_it->second), order, it->first);
+        if (newOrder.ask) {
+            // remove copypaste somehow?
+            for (auto it = bids.begin(); it != bids.end() && it->first > newOrder.price;) {
+                auto& [bookPrice, bookOrders] = *it;
+                for (auto order_it = bookOrders.begin(); order_it != bookOrders.end();) {
+                    auto deal = make_deal(*(order_it->second), newOrder, it->first);
                     deals.emplace_back(std::move(deal));
                     if (eq_zero(order_it->second->quantity)) {
                         orders_store.erase(order_it->second->id);
                         order_it = it->second.erase(order_it);
-                        if (it->second.empty()) {
-                            asks.erase(it);
+                        if (bookOrders.empty()) {
+                            it = asks.erase(it);
                         }
                     }
-                    if (eq_zero(order.quantity)) {
+                    if (eq_zero(newOrder.quantity)) {
                         return deals;
                     }
                 }
             }
         } else {
-            while (true) {
-                auto it = asks.begin();
-                if (it == asks.end() || it->first > order.price) {
-                    break;
-                }
-                for (auto order_it = it->second.begin(); order_it != it->second.end();) {
-                    auto deal = make_deal(order, *(order_it->second), it->first);
+            // remove copypaste somehow?
+            for (auto it = asks.begin(); it != asks.end() && it->first < newOrder.price;) {
+                auto& [bookPrice, bookOrders] = *it;
+                for (auto order_it = bookOrders.begin(); order_it != bookOrders.end();) {
+                    auto deal = make_deal(newOrder, *(order_it->second), it->first);
                     deals.emplace_back(std::move(deal));
                     if (eq_zero(order_it->second->quantity)) {
                         orders_store.erase(order_it->second->id);
                         order_it = it->second.erase(order_it);
-                        if (it->second.empty()) {
-                            asks.erase(it);
+                        if (bookOrders.empty()) {
+                            it = asks.erase(it);
                         }
                     }
-                    if (eq_zero(order.quantity)) {
+                    if (eq_zero(newOrder.quantity)) {
                         return deals;
                     }
                 }
             }
         }
-        insert_order(std::move(order));
+        insert_order(std::move(newOrder));
 
         return deals;
     }
