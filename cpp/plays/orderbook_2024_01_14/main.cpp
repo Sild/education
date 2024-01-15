@@ -29,13 +29,13 @@ std::istream& operator>>(std::istream& input, Order& dst) {
     std::getline(input, dst.symbol, ',');  // parse to string is a bit tricky
     parse_property(input, dst.price);
     parse_property(input, dst.quantity);
-    dst.ask = input.peek() == 'b';
+    dst.ask = input.peek() == 's';
     return input;
 }
 
 std::ostream& operator<<(std::ostream& output, const Order& obj) {
-    output << "ts: " << obj.ts << " symbol: " << obj.symbol << " price: " << obj.price << " quantity: " << obj.quantity
-           << " buy: " << obj.ask;
+    output << "id: " << obj.id << " ts: " << obj.ts << " symbol: " << obj.symbol << " price: " << obj.price
+           << " quantity: " << obj.quantity << " ask: " << obj.ask;
     return output;
 }
 
@@ -54,9 +54,7 @@ std::vector<Order> parse_input() {
     return orders;
 }
 
-bool eq_zero(double x) {
-    return std::abs(x) < 1e-9;
-}
+bool eq_zero(double x) { return std::abs(x) < 1e-9; }
 
 struct Deal {
     OrderID bid_id = 0;
@@ -65,20 +63,36 @@ struct Deal {
     double quantity = 0.0;
 };
 
+std::ostream& operator<<(std::ostream& output, const Deal& obj) {
+    output << "bid_id: " << obj.bid_id << " ask_id: " << obj.ask_id << " sum: " << obj.sum << " q: " << obj.quantity;
+    return output;
+}
+
 class SymOrderBook {
-    std::map<double, Order, std::less<>> bids;
-    std::map<double, Order, std::greater<>> asks;
+    // assume ts is unique
+    std::map<double, std::map<int, Order*>, std::greater<>> bids;  // price -> ts -> order
+    std::map<double, std::map<int, Order*>, std::less<>> asks;
     std::unordered_map<OrderID, Order> orders_store;
 
    public:
-    std::vector<Deal> upsert_order(Order& order) {
+    std::vector<Deal> upsert_order(Order&& order) {
+        if (auto it = orders_store.find(order.id); it != orders_store.end()) {
+            std::cerr << "first\n";
+            remove_order(order.id);
+        }
         // no match - fill the book
-        if (order.ask && (bids.empty() || bids.begin()->first > order.price)) {
-            orders_store[order.id] = order;  // TODO it's not enough
+        if (order.ask && (bids.empty() || bids.begin()->first < order.price)) {
+            std::cerr << "aks check\n";
+            if (!bids.empty()) {
+                std::cerr << "bid: " << bids.begin()->first << "\n";
+            }
+            insert_order(std::move(order));
+            orders_store[order.id] = std::move(order);
             return {};
         }
-        if (!order.ask && (asks.empty() || asks.begin()->first < order.price)) {
-            orders_store[order.id] = order;  // TODO it's not enough
+        if (!order.ask && (asks.empty() || asks.begin()->first > order.price)) {
+            std::cerr << "bid check\n";
+            insert_order(std::move(order));
             return {};
         }
 
@@ -87,27 +101,69 @@ class SymOrderBook {
         if (order.ask) {
             while (true) {
                 auto it = bids.begin();
-                if (it->first < order.price) {
+                if (it == bids.end() || it->first < order.price) {
                     break;
                 }
-                auto deal = make_deal(it->second, order, it->first); // make a loop
-                deals.emplace_back(std::move(deal));
-                if (eq_zero(it->second.quantity)) {
-                    remove_order(it->second.id);
+                for (auto order_it = it->second.begin(); order_it != it->second.end();) {
+                    auto deal = make_deal(*(order_it->second), order, it->first);
+                    deals.emplace_back(std::move(deal));
+                    if (eq_zero(order_it->second->quantity)) {
+                        orders_store.erase(order_it->second->id);
+                        order_it = it->second.erase(order_it);
+                        if (it->second.empty()) {
+                            asks.erase(it);
+                        }
+                    }
+                    if (eq_zero(order.quantity)) {
+                        return deals;
+                    }
                 }
-                if (eq_zero(order.quantity)) {
-                    return deals;
+            }
+        } else {
+            while (true) {
+                auto it = asks.begin();
+                if (it == asks.end() || it->first > order.price) {
+                    break;
+                }
+                for (auto order_it = it->second.begin(); order_it != it->second.end();) {
+                    auto deal = make_deal(order, *(order_it->second), it->first);
+                    deals.emplace_back(std::move(deal));
+                    if (eq_zero(order_it->second->quantity)) {
+                        orders_store.erase(order_it->second->id);
+                        order_it = it->second.erase(order_it);
+                        if (it->second.empty()) {
+                            asks.erase(it);
+                        }
+                    }
+                    if (eq_zero(order.quantity)) {
+                        return deals;
+                    }
                 }
             }
         }
+        insert_order(std::move(order));
+
+        return deals;
     }
 
-    void remove_order(OrderID id) {
-        auto it = orders_store.find(id);
-
-        if (it == orders_store.end()) {
-            return;
+    void insert_order(Order&& order) {
+        const auto& [it, _] = orders_store.emplace(order.id, std::move(order));
+        if (order.ask) {
+            asks[it->second.price].emplace(it->second.ts, &(it->second));
+        } else {
+            bids[it->second.price].emplace(it->second.ts, &(it->second));
         }
+    }
+
+    void remove_order(OrderID order_id) {
+        // expect state is valid and order exists
+        auto order_it = orders_store.find(order_id);
+        if (order_it->second.ask) {
+            asks[order_it->second.price].erase(order_it->second.ts);
+        } else {
+            bids[order_it->second.price].erase(order_it->second.ts);
+        }
+        orders_store.erase(order_it);
     }
 
    private:
@@ -132,8 +188,16 @@ int main() {
         std::cerr << "input error: " << e.what() << "\n";
         return 1;
     }
+
     std::cout << "orders size: " << orders.size() << "\n";
-    for (const auto& e : orders) {
-        std::cout << e << "\n";
+    auto book = SymOrderBook();
+    for (auto& o : orders) {
+        std::cout << "add orderer: " << o << "\n";
+        auto deals = book.upsert_order(std::move(o));
+        std::cout << "deals size: " << deals.size() << "\n";
+        for (auto& d : deals) {
+            std::cout << "deal: " << d << "\n";
+        }
     }
+    orders.clear();
 }
