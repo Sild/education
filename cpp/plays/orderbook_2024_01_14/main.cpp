@@ -70,6 +70,7 @@ std::ostream& operator<<(std::ostream& output, const Deal& obj) {
 
 class SymOrderBook {
     // assume ts is unique
+    // can't simply use set<int, Order*> as a value because it's modified during the iteration
     std::map<double, std::map<int, Order*>, std::greater<>> bids;  // price -> ts -> order
     std::map<double, std::map<int, Order*>, std::less<>> asks;
     std::unordered_map<OrderID, Order> orders_store;
@@ -77,21 +78,14 @@ class SymOrderBook {
    public:
     std::vector<Deal> upsert_order(Order&& order) {
         if (auto it = orders_store.find(order.id); it != orders_store.end()) {
-            std::cerr << "first\n";
             remove_order(order.id);
         }
-        // no match - fill the book
+        // check if no match - then fill the book
         if (order.ask && (bids.empty() || bids.begin()->first < order.price)) {
-            std::cerr << "aks check\n";
-            if (!bids.empty()) {
-                std::cerr << "bid: " << bids.begin()->first << "\n";
-            }
             insert_order(std::move(order));
-            orders_store[order.id] = std::move(order);
             return {};
         }
         if (!order.ask && (asks.empty() || asks.begin()->first > order.price)) {
-            std::cerr << "bid check\n";
             insert_order(std::move(order));
             return {};
         }
