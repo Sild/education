@@ -7,15 +7,17 @@
 
 int main()
 {
-    const auto left = genMatrix(/*resizeOnly=*/false);
-    auto right = genMatrix(/*resizeOnly=*/false);
-    auto result = genMatrix(/*resizeOnly=*/true);
-    naive(left, right, result);
+    // const auto left = genMatrix(/*resizeOnly=*/false);
+    // auto right = genMatrix(/*resizeOnly=*/false);
+    // auto result = genMatrix(/*resizeOnly=*/true);
+    // naive(left, right, result);
 
-    // printMatrix(left);
-    printMatrix(right);
-    reverseMatrix(right);
-    printMatrix(right);
-    printMatrix(result);
+    // // printMatrix(left);
+    // printMatrix(right);
+    // reverseMatrix(right);
+    // printMatrix(right);
+    // printMatrix(result);
+
+    
     return 0;
 }

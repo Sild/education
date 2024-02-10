@@ -1,34 +1,47 @@
 #pragma once
-#include <vector>
 #include <iostream>
-const static int MATRIX_SIZE = 150;
+#include <vector>
 
-using matrix = std::vector<std::vector<uint64_t>>;
+#include "eiden.hpp"
 
-matrix genMatrix(bool resizeOnly)
-{
+// const static int MATRIX_SIZE = 48;
+const static int MATRIX_SIZE = 64;
+using DataType = float;
+
+using matrix = std::vector<std::vector<DataType>>;
+
+matrix genMatrix(bool resizeOnly) {
     matrix data;
     data.resize(MATRIX_SIZE);
     int counter = 0;
-    for (auto &line : data)
-    {
+    for (auto &line : data) {
         line.resize(MATRIX_SIZE);
-        if (resizeOnly)
-            continue;
-        for (auto &v : line)
-        {
+        if (resizeOnly) continue;
+        for (auto &v : line) {
             v = counter++;
         }
     }
     return data;
 }
 
-void printMatrix(const matrix &data)
-{
-    for (auto &line : data)
-    {
-        for (auto val : line)
-        {
+template <int TSize>
+auto genEigenMatrix() {
+    auto normal = genMatrix(false);
+    Eigen::Matrix<DataType, TSize, TSize> eigen(MATRIX_SIZE, MATRIX_SIZE);
+    int i = 0;
+    for (auto &l : normal) {
+        int j = 0;
+        for (auto &e : l) {
+            eigen(i, j++) = e;
+        }
+        ++i;
+    }
+    return eigen;
+}
+
+void printMatrix(const matrix &data) {
+    for (auto &line : data) {
+        for (auto val : line) {
             std::cout << val << " ";
         }
         std::cout << std::endl;
