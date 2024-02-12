@@ -7,7 +7,10 @@ pub struct Socket {
 
 impl Socket {
     pub fn new(id: &str) -> Self {
-        Self { id: id.to_string(), is_on: false }
+        Self {
+            id: id.to_string(),
+            is_on: false,
+        }
     }
 
     pub fn get_report(&self) -> String {
@@ -33,7 +36,6 @@ unsafe fn init_socket() {
 
 #[no_mangle]
 pub extern "C" fn switch_socket_status() {
-
     unsafe {
         init_socket();
         SOCKET.as_mut().unwrap().is_on = !SOCKET.as_ref().unwrap().is_on;

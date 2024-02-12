@@ -19,13 +19,15 @@ fn print_socket_report_safe() {
 
 fn main() {
     println!("Socket cli started!");
-    let mut user_input=String::new();
+    let mut user_input = String::new();
 
     loop {
         print!("s - switch status, r - get report, q - quit. Your input: ");
         let _ = stdout().flush();
         user_input.clear();
-        stdin().read_line(&mut user_input).expect("Did not enter a correct string");
+        stdin()
+            .read_line(&mut user_input)
+            .expect("Did not enter a correct string");
         match user_input {
             ref ui if ui.trim() == "s" => {
                 switch_socket_status_safe();
