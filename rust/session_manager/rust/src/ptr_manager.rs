@@ -30,7 +30,7 @@ impl PtrManager {
 }
 
 impl SessionManager for PtrManager {
-    fn print_nodes(&self) {
+    fn format_nodes(&self)->String {
         let mut view = String::from("nodes: ");
 
         let mut cur_node = self.oldest;
@@ -49,7 +49,7 @@ impl SessionManager for PtrManager {
                 cur_node = (*cur_node).prev;
             }
         }
-        println!("{}", view);
+        view
     }
     fn create_session(&mut self, user_id: u64) -> String {
         let session_id = new_session_id();

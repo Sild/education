@@ -25,7 +25,7 @@ pub struct NaiveManager {
 }
 
 impl SessionManager for NaiveManager {
-    fn print_nodes(&self) {
+    fn format_nodes(&self)->String {
         let mut view = String::from("nodes: ");
 
         let mut node = self.oldest.clone();
@@ -42,7 +42,7 @@ impl SessionManager for NaiveManager {
             let tmp = node.as_ref().unwrap().borrow().prev.clone();
             node = tmp;
         }
-        println!("{}", view);
+        view
     }
     fn create_session(&mut self, user_id: u64) -> String {
         let session_id = new_session_id();
