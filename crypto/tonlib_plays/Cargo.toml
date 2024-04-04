@@ -1,0 +1,9 @@
+[package]
+name = "tonlib_plays"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.81"
+tonlib = "0.13.1"
+tokio = { version = "1.36.0", features = ["full"] }
