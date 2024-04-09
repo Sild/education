@@ -2,7 +2,10 @@ import { Cell, StateInit, beginCell, contractAddress, storeStateInit, toNano } f
 import { hex } from "../build/main.compiled.json"
 import qs from "qs";
 import qrcode from "qrcode-terminal"
- 
+
+import dotenv from "dotenv"
+dotenv.config();
+
 async function deployScript() {
     console.log("deploy scripts started");
     const codeCell = Cell.fromBoc(Buffer.from(hex, "hex"))[0];
@@ -30,9 +33,9 @@ async function deployScript() {
         data: stateInitCell,
     });
     console.log("contract address: " + address.toString());
-    console.log("qrcode to deploy contract:");
+    console.log(`qrcode to deploy contract to ${process.env.TESTNET ? "testnet": "mainnet"}:`);
 
-    let link = `https://test.tonhub.com/transfer/` + address.toString({
+    let link = `https://${process.env.TESTNET ? "test." : ""}tonhub.com/transfer/` + address.toString({
         testOnly: true,
     }) + "?" + qs.stringify({
         text: "Deploy contract",
