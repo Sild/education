@@ -15,10 +15,12 @@ impl<const T: usize> DummyObject<T> {
 }
 
 fn by_val<const T: usize>(obj: DummyObject<T>) -> DummyObject<T> {
+    black_box(obj.field2[0]);
     obj
 }
 
 fn by_ref<const T: usize>(obj: &DummyObject<T>) -> &DummyObject<T> {
+    black_box(obj.field2[0]);
     obj
 }
 
