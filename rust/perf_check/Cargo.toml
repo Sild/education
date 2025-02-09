@@ -6,9 +6,8 @@ edition = "2021"
 [dependencies]
 
 [dev-dependencies]
-criterion = { version = "0.5" }
-anyhow = "1.0"
+criterion = { version = "0.5", features = ["real_blackbox"] }
 
 [[bench]]
-name = "copy_vs_ref"
+name = "clone_vs_ref"
 harness = false
