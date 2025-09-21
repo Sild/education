@@ -15,10 +15,11 @@ public:
 
     std::vector<OrderFill> add(Order&& order);
     std::optional<Order> remove(const OrderID& order_id);
+    std::map<Price, OrderAggregation> levels_aggregation();
     void print() const;
 private:
     std::map<Price, std::map<size_t, Order>, std::greater<>> bids;
-    std::map<Price, OrderAggregation, std::greater<>> bids_aggregated;
+    std::map<Price, OrderAggregation> bids_aggregated;
 
     std::map<Price, std::map<size_t, Order>> asks;
     std::map<Price, OrderAggregation> asks_aggregated;

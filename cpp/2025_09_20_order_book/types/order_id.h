@@ -11,6 +11,12 @@ struct OrderID {
         return OrderID{current_id++};
     }
 
+    // stdout
+    friend std::ostream& operator<<(std::ostream& os, const OrderID& oid) {
+        os << "id: " << oid.id;
+        return os;
+    }
+
 };
 
 template <> struct std::hash<OrderID> {

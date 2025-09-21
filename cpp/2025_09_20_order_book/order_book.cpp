@@ -1,5 +1,6 @@
 #include "order_book.h"
 
+#include <assert.h>
 #include <iostream>
 #include <ostream>
 #include <ranges>
@@ -23,16 +24,18 @@ void OrderBook::print() const {
     }
 
     std::cout << "===bids===" << std::endl;
-    for (auto& [price, agg]: this->bids_aggregated) {
+    for (auto& [price, agg]: this->bids_aggregated | std::views::reverse) {
         std::cout << "price: " << price << ", q: " << agg.quantity << ", c: " << agg.count << std::endl;
     }
 }
 
-template <class Book, class Aggregation>
-static void add_order_impl(Book& book, Aggregation& aggregation, Order&& order, size_t& last_index) {
-    aggregation[order.price] += order;
-    auto& level = book[order.price];
+template <class SideLevels, class SideAggr, class OrderIndex>
+static void add_order_impl(SideLevels& levels, SideAggr& aggr, Order&& order, size_t& last_index, OrderIndex& order_index) {
+    aggr[order.price] += order;
+    auto order_id = order.id;
+    auto& level = levels[order.price];
     level.emplace_hint(level.end(), last_index++, std::move(order));
+    order_index.emplace(order_id, std::make_pair(last_index - 1, &level.rbegin()->second));
 }
 
 std::vector<OrderFill> OrderBook::add(Order &&order) {
@@ -42,10 +45,10 @@ std::vector<OrderFill> OrderBook::add(Order &&order) {
     }
     switch (order.type) {
         case Bid:
-            add_order_impl(this->bids, this->bids_aggregated, std::move(order), this->last_index);
+            add_order_impl(this->bids, this->bids_aggregated, std::move(order), this->last_index, this->order_index);
             break;
         case Ask:
-            add_order_impl(this->asks, this->asks_aggregated, std::move(order), this->last_index);
+            add_order_impl(this->asks, this->asks_aggregated, std::move(order), this->last_index, this->order_index);
             break;
     }
     return res;
@@ -61,11 +64,23 @@ std::optional<Order> OrderBook::remove(const OrderID& order_id) {
     switch (order_ptr->type) {
         case Bid:
             this->bids_aggregated[price] -= *order_ptr;
+            if (this->bids_aggregated[price].count == 0) {
+                this->bids_aggregated.erase(price);
+            }
             return this->bids[price].extract(index).mapped();
         case Ask:
             this->asks_aggregated[price] -= *order_ptr;
+            if (this->asks_aggregated[price].count == 0) {
+                this->asks_aggregated.erase(price);
+            }
             return this->asks[price].extract(index).mapped();
     }
+}
+
+std::map<Price, OrderAggregation> OrderBook::levels_aggregation() {
+    auto res = this->asks_aggregated;
+    res.insert(this->bids_aggregated.begin(), this->bids_aggregated.end());
+    return res;
 }
 
 static bool price_match(const Order& order, const Price& level_price) {
@@ -118,7 +133,9 @@ static std::vector<OrderFill> try_exec_order_impl(Book& book, Aggregation& aggre
 
             // cleanup index
             if (level_order_completed) {
-                --level_agg.count;
+                if (--level_agg.count == 0) {;
+                    aggregation.erase(level_price);
+                }
                 index.erase(level_order.id);
                 level_orders.erase(level_order_it);
                 if (level_orders.empty()) {
